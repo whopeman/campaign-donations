@@ -7,7 +7,8 @@
 #           $FEC_DATA (default ~/fec-data). Resumable; safe to re-run.
 #           - PostgreSQL dumps: Schedule A, Schedule E, committee history
 #           - Bulk files per cycle: candidates (cn), committees (cm),
-#             candidate-committee links (ccl), committee-to-candidate (pas2)
+#             candidate-committee links (ccl), committee-to-candidate (pas2),
+#             candidate financial summaries (weball)
 # Usage   : (WSL) scripts/fetch.sh [dumps|bulk|all] [cycles...]
 #           scripts/fetch.sh bulk 2024 2026
 # Change log:
@@ -38,13 +39,14 @@ fi
 
 if [ "$what" = bulk ] || [ "$what" = all ]; then
   mkdir -p "$DATA/bulk/headers"
+  # Header files are for reference only (sql/10_bulk.sql defines the columns).
   for h in cn cm ccl pas2; do
-    get "$DICT/${h}_header_file.csv" "$DATA/bulk/headers/$h.csv"
+    get "$DICT/${h}_header_file.csv" "$DATA/bulk/headers/$h.csv" || true
   done
   for cy in "${cycles[@]}"; do
     yy="${cy:2:2}"
     mkdir -p "$DATA/bulk/$cy"
-    for h in cn cm ccl pas2; do
+    for h in cn cm ccl pas2 weball; do
       # Bulk zips are replaced in place by the FEC, so always fetch fresh.
       rm -f "$DATA/bulk/$cy/$h$yy.zip"
       get "$BULK/$cy/$h$yy.zip" "$DATA/bulk/$cy/$h$yy.zip"

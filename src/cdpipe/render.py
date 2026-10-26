@@ -17,7 +17,7 @@ from __future__ import annotations
 import json
 import shutil
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -37,6 +37,20 @@ CSP = (
     "default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; "
     "base-uri 'none'; form-action 'none'; object-src 'none'"
 )
+
+
+def combine(gifts: list[Gift]) -> list[Gift]:
+    """One row per donor, method and direction: amounts summed, gifts counted,
+    and the most recent gift's date and filing kept as the row's source."""
+    rows: dict[tuple[str, str, bool], Gift] = {}
+    for g in sorted(gifts, key=lambda g: g.date or ""):
+        k = (g.donor.key, g.via, g.support)
+        prev = rows.get(k)
+        if prev is None:
+            rows[k] = g
+        else:
+            rows[k] = replace(g, amount=prev.amount + g.amount, count=prev.count + g.count)
+    return list(rows.values())
 
 
 def _svg(markup: str) -> Markup:
@@ -98,14 +112,39 @@ class Site:
         gifts: list[Gift],
         totals: dict[tuple[str, int], CandidateTotals],
     ) -> None:
-        self.out_dir.mkdir(parents=True, exist_ok=True)
-        self._static()
+        """Build everything from in-memory lists (tests and the demo)."""
+        self.common_pages()
         by_cand: dict[str, list[Gift]] = defaultdict(list)
         by_donor: dict[str, list[Gift]] = defaultdict(list)
         for g in gifts:
             by_cand[g.candidate.cand_id].append(g)
             by_donor[g.donor.key].append(g)
 
+        for s in states.STATES:
+            top = []
+            for d in donors:
+                total = sum(g.amount for g in by_donor.get(d.key, []))
+                if d.state == s.code and total:
+                    top.append((d, total))
+            top.sort(key=lambda t: -t[1])
+            self.state_page(s, [c for c in candidates if c.state == s.code], top[:100])
+        for c in candidates:
+            mine = by_cand.get(c.cand_id, [])
+            details = {cy: combine([g for g in mine if g.cycle == cy]) for cy in c.cycles}
+            cand_totals = {
+                cy: totals[(c.cand_id, cy)] for cy in c.cycles if (c.cand_id, cy) in totals
+            }
+            self.candidate_page(c, cand_totals, details)
+        for d in donors:
+            if d.has_page:
+                self.donor_page(d, by_donor.get(d.key, []))
+
+    def common_pages(self) -> None:
+        self.out_dir.mkdir(parents=True, exist_ok=True)
+        css = self.out_dir / "css"
+        css.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(STATIC / "css" / "site.css", css / "site.css")
+        shutil.copyfile(STATIC / "htaccess", self.out_dir / ".htaccess")
         self._write(
             "index.html",
             "home.html.j2",
@@ -114,21 +153,8 @@ class Site:
             cycles=self.cycles,
         )
         self._write("about.html", "about.html.j2")
-        for s in states.STATES:
-            self._state(s, candidates, donors, by_donor)
-        for c in candidates:
-            self._candidate(c, by_cand.get(c.cand_id, []), totals)
-        for d in donors:
-            self._donor(d, by_donor.get(d.key, []))
 
-    def _static(self) -> None:
-        css = self.out_dir / "css"
-        css.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(STATIC / "css" / "site.css", css / "site.css")
-        shutil.copyfile(STATIC / "htaccess", self.out_dir / ".htaccess")
-
-    def _state(self, s, candidates, donors, by_donor) -> None:
-        mine = [c for c in candidates if c.state == s.code]
+    def state_page(self, s, mine: list[Candidate], top: list[tuple[Donor, float]]) -> None:
         rows = defaultdict(list)  # (cycle, office) -> candidates
         for c in mine:
             for cy in c.cycles:
@@ -142,26 +168,27 @@ class Site:
                     offices.append((label, cs))
             if offices:
                 sections.append((cy, offices))
-        top = []
-        for d in donors:
-            if d.state != s.code:
-                continue
-            total = sum(g.amount for g in by_donor.get(d.key, []))
-            if total:
-                top.append((d, total))
-        top.sort(key=lambda t: -t[1])
         self._write(
             f"states/{s.code.lower()}/index.html",
             "state.html.j2",
             state=s,
             sections=sections,
-            top_donors=top[:100],
+            top_donors=top,
         )
 
-    def _candidate(self, c: Candidate, gifts: list[Gift], totals) -> None:
+    def candidate_page(
+        self,
+        c: Candidate,
+        totals: dict[int, CandidateTotals],
+        details: dict[int, list[Gift]],
+        more: dict[int, tuple[int, float]] | None = None,
+    ) -> None:
+        """details: the donor rows to list per cycle (already combined and capped).
+        more: per cycle, (count, amount) of donor rows left off the page."""
+        more = more or {}
         cycles = []
         for cy in sorted(c.cycles, reverse=True):
-            t = totals.get((c.cand_id, cy))
+            t = totals.get(cy)
             if t is None:
                 continue
             slices = [
@@ -174,11 +201,11 @@ class Site:
             chart = _svg(
                 pie_svg(slices, title=f"Money for and against {c.name}, {cy}", uid=f"c{cy}")
             )
-            details = sorted((g for g in gifts if g.cycle == cy), key=lambda g: -g.amount)
-            cycles.append((cy, t, slices, chart, details))
+            rows = sorted(details.get(cy, []), key=lambda g: -g.amount)
+            cycles.append((cy, t, slices, chart, rows, more.get(cy)))
         self._write(f"candidates/{c.slug}.html", "candidate.html.j2", c=c, cycles=cycles)
 
-    def _donor(self, d: Donor, gifts: list[Gift]) -> None:
+    def donor_page(self, d: Donor, gifts: list[Gift]) -> None:
         # cycle -> party -> [for, against]
         per = defaultdict(lambda: defaultdict(lambda: [0.0, 0.0]))
         for g in gifts:

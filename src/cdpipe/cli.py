@@ -54,9 +54,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "demo":
         site.build(*_demo_data())
     else:
-        from cdpipe.db import load_site_data
+        from cdpipe.db import build_from_db
 
-        site.build(*load_site_data(flags))
+        counts = build_from_db(site, flags)
+        print(f"{counts['candidates']:,} candidate pages, {counts['donors']:,} donor pages")
     print(f"wrote site to {args.out}")
     return 0
 

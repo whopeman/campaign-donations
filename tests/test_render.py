@@ -147,6 +147,40 @@ def test_donor_page_party_summary_and_for_against(built):
     assert "https://www.fec.gov/data/committee/C00999999/" in html
 
 
+def test_donor_below_threshold_has_no_page_and_no_link(tmp_path, data):
+    cands, donors, gifts, totals = data
+    small = Donor(key="i:small1", name="SMALL, SUE", kind="individual", state="NY", has_page=False)
+    gifts = [*gifts, Gift(small, cands[0], 2024, 250, True, "2024-02-02", "https://x.test/f")]
+    Site(out_dir=tmp_path, cycles=(2024,), generated="2026-10-26").build(
+        cands, [*donors, small], gifts, totals
+    )
+    html = read(tmp_path, "candidates/doe-jane-h4ny12345.html")
+    assert "SMALL, SUE" in html
+    assert "small-sue" not in html
+    assert not (tmp_path / "donors/sm/small-sue-small1.html").exists()
+
+
+def test_candidate_rows_combine_gifts_from_one_donor(tmp_path, data):
+    cands, donors, gifts, totals = data
+    alice = donors[0]
+    extra = Gift(alice, cands[0], 2024, 500, True, "2024-06-01", "https://x.test/latest")
+    Site(out_dir=tmp_path, cycles=(2024,), generated="2026-10-26").build(
+        cands, donors, [*gifts, extra], totals
+    )
+    html = read(tmp_path, "candidates/doe-jane-h4ny12345.html")
+    assert "$3,000" in html  # 2,500 + 500 on one row
+    assert "https://x.test/latest" in html and "latest filing" in html
+
+
+def test_candidate_page_notes_donors_left_off(tmp_path, data):
+    cands, _, _, totals = data
+    site = Site(out_dir=tmp_path, cycles=(2024,), generated="2026-10-26")
+    site.common_pages()
+    site.candidate_page(cands[0], {2024: totals[("H4NY12345", 2024)]}, {}, {2024: (1234, 56789)})
+    html = read(tmp_path, "candidates/doe-jane-h4ny12345.html")
+    assert "1,234 smaller donors" in html and "$56,789" in html
+
+
 def test_data_is_escaped(built):
     html = read(built, "candidates/roe-bob-i-s6tx00001.html")
     assert "<i>" not in html.split("<main")[1]

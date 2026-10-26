@@ -80,6 +80,7 @@ class Donor:
     employer: str | None = None
     occupation: str | None = None
     cmte_id: str | None = None
+    has_page: bool = True  # individuals under the threshold have no page of their own
 
     @property
     def slug(self) -> str:
@@ -107,6 +108,7 @@ class Gift:
     date: str | None
     source_url: str | None
     via: str = "Contribution"
+    count: int = 1  # gifts combined into this row
 
 
 @dataclass(frozen=True)

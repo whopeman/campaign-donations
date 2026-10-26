@@ -32,7 +32,7 @@ can be read without telling colours apart.
 | --------- | ----------------- | ----------------------------------------------------------- |
 | Fetch     | WSL, `scripts/`   | Download FEC PostgreSQL dumps and bulk files to `~/fec-data` |
 | Load      | WSL, PostgreSQL   | Restore dumps, load bulk files, build summary tables (`sql/`) |
-| Aggregate | WSL, Python       | Donor matching and totals; GPU (RAPIDS cuDF) when enabled    |
+| Aggregate | WSL, PostgreSQL   | Donor matching and totals (`sql/20_site.sql`)               |
 | Render    | WSL, Python       | Jinja2 templates to static HTML in `site/`                   |
 | Deploy    | Windows, PowerShell | Framework deploy script uploads `site/` over SFTP          |
 
@@ -85,7 +85,7 @@ Set in `config/flags.toml`, or override per run with `CD_<NAME>`, for example
 
 | Flag                       | Default            | Effect                                      |
 | -------------------------- | ------------------ | ------------------------------------------- |
-| `use_gpu`                  | `true`             | Aggregate on the GPU, else CPU (Polars)     |
+| `use_gpu`                  | `true`             | GPU entity matching (Phase 2; unused in 0.1) |
 | `cycles`                   | 2016 to 2026       | Election cycles to publish                  |
 | `donor_page_threshold_usd` | `1000`             | Individuals need this much in a cycle for a page |
 | `offices`                  | `["H", "S"]`       | Offices to include                          |
