@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+{#
+  templates/base.html.j2
+  Project : Campaign Donations
+  Date    : 2026-10-26
+  Purpose : Shared page frame: head with CSP, header navigation, footer with
+            the FEC data-use notice and sources.
+  Change log:
+    2026-10-26  0.1.0  Initial version.
+#}
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="{{ csp }}">
+    <meta name="description" content="{% block description %}Donor tracking and aggregation for federal campaigns, from public FEC data.{% endblock %}">
+    <title>{% block title %}Campaign Donations{% endblock %} | Hopeman Horde</title>
+    <link rel="stylesheet" href="{{ root }}css/site.css">
+  </head>
+  <body>
+    <header class="site">
+      <a class="brand" href="{{ root }}index.html">Campaign Donations</a>
+      <nav aria-label="Site">
+        <a href="{{ root }}index.html">States</a>
+        <a href="{{ root }}about.html">About the data</a>
+        <a href="{{ root }}../">HopemanHorde.com</a>
+      </nav>
+    </header>
+    <main id="main">
+{% block content %}{% endblock %}
+    </main>
+    <footer class="site">
+      <p>
+        Source: Federal Election Commission filings, via the
+        <a href="https://www.fec.gov/data/browse-data/?tab=bulk-data">FEC bulk data</a>.
+        Every figure links to the filing or FEC page it comes from.
+      </p>
+      <p class="notice">
+        Federal law (52 U.S.C. 30111(a)(4)) says the names and addresses of individual
+        contributors in FEC reports may not be sold or used for commercial purposes, or to
+        solicit contributions.
+      </p>
+      <p>Built {{ generated }} &middot; version {{ version }} &middot;
+        <a href="https://github.com/whopeman/campaign-donations">source code</a></p>
+    </footer>
+  </body>
+</html>

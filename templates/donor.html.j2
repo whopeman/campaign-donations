@@ -1,0 +1,60 @@
+{#
+  templates/donor.html.j2
+  Project : Campaign Donations
+  Date    : 2026-10-26
+  Purpose : One donor: totals by party per cycle (chart and table), then every
+            gift with the candidate, for or against, amount and source filing.
+  Change log:
+    2026-10-26  0.1.0  Initial version.
+#}
+{% extends "base.html.j2" %}
+{% block title %}{{ d.name }}{% endblock %}
+{% block content %}
+      <h1>{{ d.name }}</h1>
+      <p class="lead">
+        {{ "Committee or PAC" if d.kind == "committee" else "Individual donor" }}
+        {% if d.city or d.state %}&middot; {{ d.city or "" }}{% if d.city and d.state %}, {% endif %}{{ d.state or "" }}{% endif %}
+        {% if d.employer %}&middot; {{ d.employer }}{% if d.occupation %} ({{ d.occupation }}){% endif %}{% endif %}
+        {% if d.fec_url %}&middot; <a href="{{ d.fec_url }}">FEC committee page</a>{% endif %}
+      </p>
+{% if summary %}
+      <section>
+        <h2>Summary by party and cycle</h2>
+        <figure class="chart">
+          {{ chart }}
+        </figure>
+        <table>
+          <thead><tr><th scope="col">Cycle</th><th scope="col">Candidate party</th><th scope="col" class="num">For</th><th scope="col" class="num">Against</th></tr></thead>
+          <tbody>
+{% for cycle, parties in summary %}
+{% for party, v in parties %}
+            <tr><td>{{ cycle }}</td><td>{{ party | party }}</td><td class="num">{{ v[0] | usd }}</td><td class="num">{{ v[1] | usd }}</td></tr>
+{% endfor %}
+{% endfor %}
+          </tbody>
+        </table>
+      </section>
+      <section>
+        <h2>Every gift</h2>
+        <table>
+          <thead><tr><th scope="col">Cycle</th><th scope="col">Candidate</th><th scope="col">Party</th><th scope="col">How</th><th scope="col">For or against</th><th scope="col" class="num">Amount</th><th scope="col">Date</th><th scope="col">Source</th></tr></thead>
+          <tbody>
+{% for g in details %}
+            <tr>
+              <td>{{ g.cycle }}</td>
+              <td><a href="{{ root }}candidates/{{ g.candidate.slug }}.html">{{ g.candidate.name }}</a></td>
+              <td>{{ g.candidate.party_full }}</td>
+              <td>{{ g.via }}</td>
+              <td>{{ "For" if g.support else "Against" }}</td>
+              <td class="num">{{ g.amount | usd }}</td>
+              <td>{{ g.date or "" }}</td>
+              <td>{% if g.source_url %}<a href="{{ g.source_url }}">filing</a>{% endif %}</td>
+            </tr>
+{% endfor %}
+          </tbody>
+        </table>
+      </section>
+{% else %}
+      <p>No gifts to candidates in the selected cycles.</p>
+{% endif %}
+{% endblock %}

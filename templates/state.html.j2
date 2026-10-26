@@ -1,0 +1,55 @@
+{#
+  templates/state.html.j2
+  Project : Campaign Donations
+  Date    : 2026-10-26
+  Purpose : One state: candidates by cycle and office, and the state's top donors.
+  Change log:
+    2026-10-26  0.1.0  Initial version.
+#}
+{% extends "base.html.j2" %}
+{% block title %}{{ state.name }}{% endblock %}
+{% block content %}
+      <h1>{{ state.name }}</h1>
+{% if not sections %}
+      <p>No candidates for the selected cycles yet.</p>
+{% endif %}
+{% for cycle, offices in sections %}
+      <section>
+        <h2>{{ cycle - 1 }}&ndash;{{ cycle }} cycle</h2>
+{% for label, cands in offices %}
+        <h3>{{ label }}</h3>
+        <table>
+          <thead><tr><th scope="col">Candidate</th><th scope="col">Party</th><th scope="col">Seat</th><th scope="col">Status</th><th scope="col">Source</th></tr></thead>
+          <tbody>
+{% for c in cands %}
+            <tr>
+              <td><a href="{{ root }}candidates/{{ c.slug }}.html">{{ c.name }}</a></td>
+              <td>{{ c.party_full }}</td>
+              <td>{{ c.office_full }}</td>
+              <td>{{ "Incumbent" if c.incumbent else "Challenger or open seat" }}</td>
+              <td><a href="{{ c.fec_url }}?cycle={{ cycle }}">FEC</a></td>
+            </tr>
+{% endfor %}
+          </tbody>
+        </table>
+{% endfor %}
+      </section>
+{% endfor %}
+{% if top_donors %}
+      <section>
+        <h2>Top donors living in {{ state.name }}</h2>
+        <table>
+          <thead><tr><th scope="col">Donor</th><th scope="col">Type</th><th scope="col" class="num">Total to candidates</th></tr></thead>
+          <tbody>
+{% for d, total in top_donors %}
+            <tr>
+              <td><a href="{{ root }}{{ d.path }}">{{ d.name }}</a></td>
+              <td>{{ d.kind | capitalize }}</td>
+              <td class="num">{{ total | usd }}</td>
+            </tr>
+{% endfor %}
+          </tbody>
+        </table>
+      </section>
+{% endif %}
+{% endblock %}

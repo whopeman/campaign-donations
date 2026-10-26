@@ -1,0 +1,23 @@
+{
+  "//": [
+    "package.json - Project: Campaign Donations - Date: 2026-10-26",
+    "Purpose: dev-only Node tooling: build the state map paths once, and validate generated HTML.",
+    "Usage: npm install; npm run build:map; npm run lint:html",
+    "Change log: 2026-10-26 0.1.0 Initial tooling."
+  ],
+  "name": "campaign-donations",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build:map": "node tools/build-map.mjs",
+    "lint:html": "html-validate \"site/**/*.html\""
+  },
+  "devDependencies": {
+    "d3-geo": "3.1.1",
+    "html-validate": "^11.17.0",
+    "topojson-client": "3.1.0",
+    "us-atlas": "3.0.1"
+  }
+}

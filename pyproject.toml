@@ -1,0 +1,58 @@
+# =============================================================================
+# pyproject.toml
+# Project : Campaign Donations
+# Date    : 2026-10-26
+# Purpose : Python package, dependencies and tool settings for the data
+#           pipeline and static page generator (cdpipe).
+# Usage   : (WSL) UV_PROJECT_ENVIRONMENT=~/venvs/cd uv sync
+#           uv run pytest ; uv run ruff check .
+# Change log:
+#   2026-10-26  0.1.0  Initial version.
+# =============================================================================
+[project]
+name = "cdpipe"
+version = "0.1.0"
+description = "Builds the Campaign Donations static site from public FEC data."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+  "jinja2>=3.1.6",
+  "psycopg[binary]>=3.2",
+  "polars>=1.30",
+]
+
+[project.optional-dependencies]
+gpu = ["cudf-cu12>=25.8"]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.4",
+  "ruff>=0.13",
+  "pip-audit>=2.9",
+]
+
+[project.scripts]
+cdpipe = "cdpipe.cli:main"
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cdpipe"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "N", "SIM"]
+ignore = ["S101"]  # assert is how pytest works
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S"]

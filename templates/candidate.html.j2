@@ -1,0 +1,56 @@
+{#
+  templates/candidate.html.j2
+  Project : Campaign Donations
+  Date    : 2026-10-26
+  Purpose : One candidate: party, and per cycle a pie of money for and against
+            with a totals table, then every donor in detail with sources.
+  Change log:
+    2026-10-26  0.1.0  Initial version.
+#}
+{% extends "base.html.j2" %}
+{% block title %}{{ c.name }}{% endblock %}
+{% block content %}
+      <h1>{{ c.name }}</h1>
+      <p class="lead">{{ c.party_full }} &middot; {{ c.office_full }} &middot;
+        <a href="{{ root }}states/{{ c.state | lower }}/index.html">All {{ c.state }} candidates</a> &middot;
+        <a href="{{ c.fec_url }}">FEC candidate page</a></p>
+{% if not cycles %}
+      <p>No reported money for the selected cycles.</p>
+{% endif %}
+{% for cycle, t, slices, chart, details in cycles %}
+      <section>
+        <h2>{{ cycle - 1 }}&ndash;{{ cycle }} cycle</h2>
+        <figure class="chart">
+          {{ chart }}
+        </figure>
+        {% set total = slices | sum(attribute="amount") %}
+        <table>
+          <caption>Money for and against, {{ cycle }} (<a href="{{ c.fec_url }}?cycle={{ cycle }}">source</a>)</caption>
+          <thead><tr><th scope="col">Source of money</th><th scope="col">For or against</th><th scope="col" class="num">Amount</th><th scope="col" class="num">Share</th></tr></thead>
+          <tbody>
+{% for s in slices %}
+            <tr><td>{{ s.label }}</td><td>{{ "Against" if s.kind == "oppose" else "For" }}</td><td class="num">{{ s.amount | usd }}</td><td class="num">{{ pct(s.amount, total) }}</td></tr>
+{% endfor %}
+          </tbody>
+        </table>
+{% if details %}
+        <h3>Donors and outside spenders</h3>
+        <table>
+          <thead><tr><th scope="col">Donor</th><th scope="col">How</th><th scope="col">For or against</th><th scope="col" class="num">Amount</th><th scope="col">Date</th><th scope="col">Source</th></tr></thead>
+          <tbody>
+{% for g in details %}
+            <tr>
+              <td><a href="{{ root }}{{ g.donor.path }}">{{ g.donor.name }}</a></td>
+              <td>{{ g.via }}</td>
+              <td>{{ "For" if g.support else "Against" }}</td>
+              <td class="num">{{ g.amount | usd }}</td>
+              <td>{{ g.date or "" }}</td>
+              <td>{% if g.source_url %}<a href="{{ g.source_url }}">filing</a>{% endif %}</td>
+            </tr>
+{% endfor %}
+          </tbody>
+        </table>
+{% endif %}
+      </section>
+{% endfor %}
+{% endblock %}

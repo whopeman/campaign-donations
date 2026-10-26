@@ -1,0 +1,28 @@
+{#
+  templates/home.html.j2
+  Project : Campaign Donations
+  Date    : 2026-10-26
+  Purpose : Intro page with the clickable US state map.
+  Change log:
+    2026-10-26  0.1.0  Initial version.
+#}
+{% extends "base.html.j2" %}
+{% block title %}Federal campaign donors{% endblock %}
+{% block content %}
+      <h1>Donor tracking and aggregation for federal campaigns</h1>
+      <p class="lead">
+        Who gives to candidates for Congress, how much, and whether the money was spent for
+        or against them. Built from public Federal Election Commission filings for the
+        {{ cycles | first - 1 }}&ndash;{{ cycles | last }} election cycles.
+      </p>
+      <p>Select a state to see its House and Senate candidates and its donors.</p>
+      <figure class="map">
+        {{ map_svg }}
+      </figure>
+      <h2>All states and territories</h2>
+      <ul class="state-list">
+{% for s in states %}
+        <li><a href="states/{{ s.code | lower }}/index.html">{{ s.name }}</a></li>
+{% endfor %}
+      </ul>
+{% endblock %}

@@ -1,0 +1,39 @@
+{#
+  templates/about.html.j2
+  Project : Campaign Donations
+  Date    : 2026-10-26
+  Purpose : Data sources, method, limits and licences.
+  Change log:
+    2026-10-26  0.1.0  Initial version.
+#}
+{% extends "base.html.j2" %}
+{% block title %}About the data{% endblock %}
+{% block content %}
+      <h1>About the data</h1>
+      <h2>Sources</h2>
+      <ul>
+        <li>Itemized receipts (Schedule A), independent expenditures (Schedule E) and committee
+          history: the FEC's <a href="https://www.fec.gov/data/browse-data/?tab=bulk-data">PostgreSQL
+          data dumps</a>, refreshed weekly by the FEC and here monthly.</li>
+        <li>Candidates, committees and the links between them: FEC bulk files (candidate master,
+          committee master, candidate-committee linkage, committee contributions to candidates).</li>
+        <li>State map: US Census Bureau
+          <a href="https://www.census.gov/geographies/mapping-files/time-series/geo/cartographic-boundary.html">cartographic
+          boundary files</a> (public domain), as packaged by
+          <a href="https://github.com/topojson/us-atlas">us-atlas</a>.</li>
+      </ul>
+      <h2>How the numbers are built</h2>
+      <ul>
+        <li>"For" money is what was given to a candidate's own committees, plus independent
+          expenditures reported as supporting them. "Against" is independent expenditures
+          reported as opposing them.</li>
+        <li>Individual donors are matched by name and ZIP code, because the FEC does not assign
+          individuals an ID. Two people with the same name in the same ZIP code may be combined.</li>
+        <li>Only contributions over $200 are itemized with a donor name; smaller gifts appear only
+          as a total per candidate.</li>
+        <li>Memo entries are left out so that earmarked gifts are not counted twice.</li>
+      </ul>
+      <h2>Charts</h2>
+      <p>Every chart uses both colour and a fill pattern (stripes, dots, cross-hatching) for each
+        series, and lists every value in text, so it can be read without telling colours apart.</p>
+{% endblock %}

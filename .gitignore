@@ -1,0 +1,21 @@
+# .gitignore
+# Project : Campaign Donations
+# Date    : 2026-10-26
+# Purpose : Keep local deploy config, keys and build output out of git.
+# Change log:
+#   2026-10-26  0.1.0  Created from the Framework_Website_HopemanHorde template.
+deploy.local.json
+.ssh/
+*.key
+*.pem
+id_*
+.env*
+node_modules/
+
+# Build output and local environments (added 0.1.0)
+site/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/

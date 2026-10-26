@@ -1,0 +1,25 @@
+# =============================================================================
+# config/flags.toml
+# Project : Campaign Donations
+# Date    : 2026-10-26
+# Purpose : Feature flags and build settings. Any flag can be overridden with
+#           an environment variable CD_<NAME> (e.g. CD_USE_GPU=false).
+# Change log:
+#   2026-10-26  0.1.0  Initial flags.
+# =============================================================================
+
+# Aggregate with RAPIDS cuDF on the NVIDIA GPU; falls back to Polars on CPU.
+use_gpu = true
+
+# Election cycles (two-year periods, named by their even end year) to publish.
+cycles = [2016, 2018, 2020, 2022, 2024, 2026]
+
+# Individual donors get their own page only when their total for a single
+# cycle reaches this many US dollars. Committees and PACs always get a page.
+donor_page_threshold_usd = 1000
+
+# Phase 1 focuses on the House; Senate and President pages can follow.
+offices = ["H", "S"]
+
+# Show the county breakdown on state pages (Phase 3 preview).
+county_view = false
