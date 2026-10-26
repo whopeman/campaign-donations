@@ -7,7 +7,7 @@
 #           default "fec") and build the "site" schema the pages are made from.
 #           Steps can be run on their own, so a monthly update can redo only
 #           what changed.
-# Usage   : (WSL) scripts/load.sh [init|dumps|bulk|site|all]
+# Usage   : (WSL) scripts/load.sh [init|small|sched_a|bulk|site|all]
 # Needs   : a PostgreSQL role for the current user with CREATEDB.
 # Change log:
 #   2026-10-26  0.1.0  Initial version.
@@ -48,9 +48,12 @@ restore() {  # restore <dump file> <table-name regex>
   rm -f "$list"
 }
 
-dumps() {
+small_dumps() {
   restore "$DATA/dump/ofec_committee_history.dump" 'ofec_committee_history'
   restore "$DATA/dump/fec_fitem_sched_e.dump" 'fec_fitem_sched_e'
+}
+
+sched_a() {
   # Schedule A is partitioned by two-year period; keep only the cycles we publish.
   local parts="fec_fitem_sched_a"
   IFS=',' read -ra cy <<< "$CYCLES"
@@ -81,10 +84,11 @@ site() {
 
 case "$step" in
   init) init ;;
-  dumps) dumps ;;
+  small) small_dumps ;;
+  sched_a) sched_a ;;
   bulk) bulk ;;
   site) site ;;
-  all) init; dumps; bulk; site ;;
-  *) echo "usage: $0 [init|dumps|bulk|site|all]" >&2; exit 2 ;;
+  all) init; small_dumps; sched_a; bulk; site ;;
+  *) echo "usage: $0 [init|small|sched_a|bulk|site|all]" >&2; exit 2 ;;
 esac
 log "done $step"

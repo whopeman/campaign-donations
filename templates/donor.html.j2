@@ -35,9 +35,9 @@
         </table>
       </section>
       <section>
-        <h2>Every gift</h2>
+        <h2>Details by candidate</h2>
         <table>
-          <thead><tr><th scope="col">Cycle</th><th scope="col">Candidate</th><th scope="col">Party</th><th scope="col">How</th><th scope="col">For or against</th><th scope="col" class="num">Amount</th><th scope="col">Date</th><th scope="col">Source</th></tr></thead>
+          <thead><tr><th scope="col">Cycle</th><th scope="col">Candidate</th><th scope="col">Party</th><th scope="col">How</th><th scope="col">For or against</th><th scope="col" class="num">Amount</th><th scope="col" class="num">Gifts</th><th scope="col">Latest</th><th scope="col">Source</th></tr></thead>
           <tbody>
 {% for g in details %}
             <tr>
@@ -47,8 +47,9 @@
               <td>{{ g.via }}</td>
               <td>{{ "For" if g.support else "Against" }}</td>
               <td class="num">{{ g.amount | usd }}</td>
+              <td class="num">{{ g.count }}</td>
               <td>{{ g.date or "" }}</td>
-              <td>{% if g.source_url %}<a href="{{ g.source_url }}">filing</a>{% endif %}</td>
+              <td>{% if g.source_url %}<a href="{{ g.source_url }}">{{ "latest filing" if g.count > 1 else "filing" }}</a>{% endif %}</td>
             </tr>
 {% endfor %}
           </tbody>

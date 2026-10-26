@@ -11,7 +11,7 @@ from decimal import Decimal
 
 import pytest
 
-from cdpipe.format import pct, slugify, usd
+from cdpipe.format import clean_name, pct, slugify, usd
 
 
 @pytest.mark.parametrize(
@@ -27,6 +27,23 @@ from cdpipe.format import pct, slugify, usd
 )
 def test_usd(amount, expected):
     assert usd(amount) == expected
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("OCASIO-CORTEZ, ALEXANDRIA", "OCASIO-CORTEZ, ALEXANDRIA"),
+        ("TUCKER, ANTOINE MR.", "TUCKER, ANTOINE"),
+        ("ZHERKA, HASIME SAMANTHA MRS.", "ZHERKA, HASIME SAMANTHA"),
+        ("LANG, EDWARD JAKE MR", "LANG, EDWARD JAKE"),
+        ("DR. SMITH, JOHN", "SMITH, JOHN"),
+        ("CARL, JERRY LEE, JR", "CARL, JERRY LEE, JR"),
+        ("  MRAZ,  MARY  ", "MRAZ, MARY"),
+        (None, ""),
+    ],
+)
+def test_clean_name(raw, expected):
+    assert clean_name(raw) == expected
 
 
 def test_pct():

@@ -29,6 +29,17 @@ def pct(part, whole) -> str:
     return f"{float(part) / float(whole) * 100:.1f}%"
 
 
+_TITLES = re.compile(r"(?:^|(?<=[\s,]))(?:MR|MRS|MS|MISS|DR|HON)\.?(?=\s|,|$)")
+
+
+def clean_name(name: str | None) -> str:
+    """Drop courtesy titles (MR., MRS., DR.) that some filers include, keep suffixes."""
+    n = _TITLES.sub(" ", (name or "").upper())
+    n = re.sub(r"\s+", " ", n)
+    n = re.sub(r"\s+,", ",", n)
+    return n.strip(" ,")
+
+
 def slugify(name: str | None, ident: str | None) -> str:
     text = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode()
     base = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")

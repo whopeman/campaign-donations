@@ -38,7 +38,7 @@ INSERT INTO {SCHEMA}.cand_totals VALUES
 INSERT INTO {SCHEMA}.donor VALUES
   ('i:aaa', 'SMITH, ALICE', 'individual', 'ALBANY', 'NY', 'ACME', 'ENGINEER', null, true),
   ('i:bbb', 'LOW, LARRY', 'individual', 'TROY', 'NY', null, null, null, false),
-  ('c:C9', 'PAC NINE', 'committee', null, 'DC', 'C9', true);
+  ('c:C9', 'PAC NINE', 'committee', null, 'DC', null, null, 'C9', true);
 INSERT INTO {SCHEMA}.gift VALUES
   ('i:aaa', 'H4NY00001', 2024, 2000, true, 'Contribution', '2024-01-02', 'https://f/1', 1),
   ('i:aaa', 'H4NY00001', 2024, 1000, true, 'Contribution', '2024-05-02', 'https://f/2', 2),

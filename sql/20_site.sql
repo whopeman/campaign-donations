@@ -77,13 +77,18 @@ JOIN site.cand_cmte cc ON cc.cmte_id = a.cmte_id AND cc.cycle = a.two_year_trans
 WHERE a.is_individual AND a.memo_cd IS NULL;
 
 -- 2. Contributions from PACs and party committees to candidates (bulk pas2).
+--    Earmarked gifts passed through a conduit (WinRed, ActBlue, or a PAC that
+--    forwards members' checks) are individuals' money: the candidate reports
+--    them on Schedule A, so they are counted once, in step 1.
 INSERT INTO site.gift
 SELECT 'c:' || p.cmte_id, p.cand_id, p.cycle, p.transaction_amt, true,
        CASE p.transaction_tp WHEN '24Z' THEN 'In-kind contribution' ELSE 'PAC contribution' END,
        to_date(nullif(p.transaction_dt, ''), 'MMDDYYYY'),
        'https://docquery.fec.gov/cgi-bin/fecimg/?' || p.image_num, p.sub_id
 FROM bulk.pas2 p JOIN site.candidate c ON c.cand_id = p.cand_id AND c.cycle = p.cycle
-WHERE p.transaction_tp IN ('24K', '24Z') AND p.memo_cd IS NULL AND p.cmte_id IS DISTINCT FROM c.pcc;
+WHERE p.transaction_tp IN ('24K', '24Z') AND p.memo_cd IS NULL AND p.cmte_id IS DISTINCT FROM c.pcc
+  AND p.cmte_id NOT IN ('C00694323', 'C00401224')  -- WinRed, ActBlue (conduits)
+  AND coalesce(p.memo_text, '') NOT ILIKE '%EARMARK%';
 
 -- 3. Independent expenditures for (S) or against (O) a candidate.
 INSERT INTO site.gift
@@ -137,20 +142,26 @@ WITH ind AS (  -- most recent name/address seen for each individual key
          committee_id
   FROM disclosure.ofec_committee_history
   ORDER BY committee_id, cycle DESC
+), cm AS (  -- bulk committee master, for committees newer than the history dump
+  SELECT DISTINCT ON (cmte_id) 'c:' || cmte_id AS donor_key, cmte_nm AS name, cmte_city AS city,
+         cmte_st AS state, cmte_id
+  FROM bulk.cm
+  ORDER BY cmte_id, cycle DESC
 ), peak AS (  -- best single-cycle total, for the page threshold
   SELECT donor_key, max(t) AS peak_cycle_total
   FROM (SELECT donor_key, cycle, sum(amount) AS t FROM site.gift GROUP BY 1, 2) x
   GROUP BY donor_key
 )
 SELECT p.donor_key,
-       coalesce(i.name, m.name, p.donor_key) AS name,
+       coalesce(i.name, m.name, b.name, p.donor_key) AS name,
        CASE WHEN p.donor_key LIKE 'c:%' THEN 'committee' ELSE 'individual' END AS kind,
-       coalesce(i.city, m.city) AS city, coalesce(i.state, m.state) AS state,
-       i.employer, i.occupation, m.committee_id AS cmte_id,
+       coalesce(i.city, m.city, b.city) AS city, coalesce(i.state, m.state, b.state) AS state,
+       i.employer, i.occupation, coalesce(m.committee_id, b.cmte_id) AS cmte_id,
        p.donor_key LIKE 'c:%' OR p.peak_cycle_total >= :threshold AS has_page
 FROM peak p
 LEFT JOIN ind i ON i.donor_key = p.donor_key
-LEFT JOIN cmte m ON m.donor_key = p.donor_key;
+LEFT JOIN cmte m ON m.donor_key = p.donor_key
+LEFT JOIN cm b ON b.donor_key = p.donor_key;
 ALTER TABLE site.donor ADD PRIMARY KEY (donor_key);
 
 ANALYZE site.candidate, site.cand_cmte, site.gift, site.cand_totals, site.donor;

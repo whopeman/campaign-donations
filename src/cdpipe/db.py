@@ -21,6 +21,7 @@ from psycopg import sql
 
 from cdpipe import states
 from cdpipe.flags import Flags
+from cdpipe.format import clean_name
 from cdpipe.models import Candidate, CandidateTotals, Donor, Gift
 from cdpipe.render import Site
 
@@ -48,7 +49,9 @@ def _candidates(cur, schema: str) -> dict[str, Candidate]:
         ).format(sql.Identifier(schema))
     )
     return {
-        r[0]: Candidate(r[0], r[2], r[3], r[4], r[5], r[6], bool(r[7]), tuple(r[1]))
+        r[0]: Candidate(
+            r[0], clean_name(r[2]) or r[0], r[3], r[4], r[5], r[6], bool(r[7]), tuple(r[1])
+        )
         for r in cur.fetchall()
     }
 

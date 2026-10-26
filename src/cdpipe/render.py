@@ -53,6 +53,20 @@ def combine(gifts: list[Gift]) -> list[Gift]:
     return list(rows.values())
 
 
+def combine_by_candidate(gifts: list[Gift]) -> list[Gift]:
+    """Donor-page rows: one per cycle, candidate, method and direction."""
+    rows: dict[tuple, Gift] = {}
+    for g in sorted(gifts, key=lambda g: g.date or ""):
+        k = (g.cycle, g.candidate.cand_id, g.via, g.support)
+        prev = rows.get(k)
+        rows[k] = (
+            g
+            if prev is None
+            else replace(g, amount=prev.amount + g.amount, count=prev.count + g.count)
+        )
+    return list(rows.values())
+
+
 def _svg(markup: str) -> Markup:
     """Mark SVG we generated as safe. charts.py and map_svg escape every data value."""
     return Markup(markup)  # noqa: S704
@@ -223,5 +237,5 @@ class Site:
             summary.append((cy, sorted(per[cy].items(), key=lambda kv: -(kv[1][0] + kv[1][1]))))
         title = f"Money for and against candidates from {d.name}, by party and cycle"
         chart = _svg(stacked_bars_svg(bars, title=title, uid="d"))
-        details = sorted(gifts, key=lambda g: (-g.cycle, -g.amount))
+        details = sorted(combine_by_candidate(gifts), key=lambda g: (-g.cycle, -g.amount))
         self._write(d.path, "donor.html.j2", d=d, chart=chart, summary=summary, details=details)
