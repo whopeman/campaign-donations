@@ -27,13 +27,33 @@ cycles=("$@")
 
 get() {  # get <url> <dest>
   echo "$(date -Is) get $1"
-  curl -fsS -L -C - --retry 10 --retry-delay 30 -o "$2" "$1"
+  curl -fsS -L -C - --retry 10 --retry-delay 30 --retry-all-errors -o "$2" "$1"
+}
+
+# Large dumps: resume until the local size matches the server's. If the FEC
+# has replaced the file since we started (new ETag), start over.
+get_big() {  # get_big <url> <dest>
+  local url="$1" dest="$2" etag_file="$2.etag" head want etag tries=0
+  head="$(curl -fsSI "$url")"
+  want="$(awk 'tolower($1)=="content-length:" {print $2}' <<< "$head" | tr -d '\r')"
+  etag="$(awk 'tolower($1)=="etag:" {print $2}' <<< "$head" | tr -d '\r')"
+  if [ -f "$etag_file" ] && [ "$(cat "$etag_file")" != "$etag" ]; then
+    echo "$(date -Is) $dest changed on the server; starting over"
+    rm -f "$dest"
+  fi
+  echo "$etag" > "$etag_file"
+  while [ "$(stat -c %s "$dest" 2>/dev/null || echo 0)" != "$want" ]; do
+    tries=$((tries + 1))
+    [ "$tries" -gt 50 ] && { echo "giving up on $url" >&2; return 1; }
+    get "$url" "$dest" || sleep 30
+  done
+  echo "$(date -Is) complete $dest ($want bytes)"
 }
 
 if [ "$what" = dumps ] || [ "$what" = all ]; then
   mkdir -p "$DATA/dump"
   for f in README.txt ofec_committee_history.dump fec_fitem_sched_e.dump fec_fitem_sched_a.dump; do
-    get "$DUMPS/$f" "$DATA/dump/$f"
+    get_big "$DUMPS/$f" "$DATA/dump/$f"
   done
 fi
 
