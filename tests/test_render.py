@@ -181,6 +181,18 @@ def test_candidate_page_notes_donors_left_off(tmp_path, data):
     assert "1,234 smaller donors" in html and "$56,789" in html
 
 
+def test_long_names_give_short_titles(tmp_path, data):
+    cands, _, _, totals = data
+    long_pac = Donor(key="c:C00000042", name="A VERY LONG COMMITTEE NAME " * 5, kind="committee")
+    site = Site(out_dir=tmp_path, cycles=(2024,), generated="2026-10-26")
+    site.common_pages()
+    site.donor_page(long_pac, [])
+    html = read(tmp_path, long_pac.path)
+    title = html.split("<title>")[1].split("</title>")[0]
+    assert len(title) <= 70
+    assert title.endswith("| Hopeman Horde")
+
+
 def test_data_is_escaped(built):
     html = read(built, "candidates/roe-bob-i-s6tx00001.html")
     assert "<i>" not in html.split("<main")[1]

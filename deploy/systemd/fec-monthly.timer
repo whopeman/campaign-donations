@@ -1,0 +1,16 @@
+# deploy/systemd/fec-monthly.timer
+# Project : Campaign Donations
+# Date    : 2026-10-27
+# Purpose : Run the monthly update on the first Sunday of each month, after the
+#           FEC's Saturday refresh of its database dumps.
+# Change log:
+#   2026-10-27  0.1.0  Initial version.
+[Unit]
+Description=Campaign Donations monthly FEC update (first Sunday, 03:00)
+
+[Timer]
+OnCalendar=Sun *-*-01..07 03:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

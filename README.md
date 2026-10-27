@@ -103,6 +103,29 @@ npm run deploy -- -ConfigPath ../campaign-donations/deploy.local.json -Execute  
 
 Uploads go only into `public_html/campaign-donations/`.
 
+## Monthly updates
+
+`scripts/monthly.sh` runs the whole update as separate, logged steps
+(`fetch-bulk`, `fetch-dumps`, `load-bulk`, `load-dumps`, `site`, `render`,
+`check`, `deploy`, `renew-limit`). A failed step skips only the steps that
+depend on it. Logs go to `~/fec-data/monthly/<date>.log`. Any step can be run
+alone, for example `scripts/monthly.sh render check`.
+
+The new site is rendered to `~/site-out.new` and swapped in only when the
+render succeeds; the previous build is kept as `~/site-out.old`. Upload only
+happens when `CD_AUTO_DEPLOY=true`.
+
+A systemd user timer runs it on the first Sunday of each month at 03:00, after
+the FEC's Saturday refresh. Install it once in WSL:
+
+```sh
+mkdir -p ~/.config/systemd/user
+cp deploy/systemd/fec-monthly.* ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now fec-monthly.timer
+loginctl enable-linger "$USER"   # keep user timers running when logged out
+```
+
 ## Data use
 
 FEC data is public. Federal law (52 U.S.C. 30111(a)(4)) says the names and

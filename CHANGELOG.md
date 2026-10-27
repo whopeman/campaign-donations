@@ -25,3 +25,11 @@ All notable changes are listed here. The format follows
 - `cdpipe demo` command for checking layout with made-up data.
 - `scripts/fetch.sh` to download FEC dumps and bulk files.
 - Security headers via `.htaccess` and a Content-Security-Policy meta tag.
+- Database load (`scripts/load.sh`, `sql/`) and streaming renderer from PostgreSQL.
+- Parallel range downloader for the 91 GB Schedule A dump.
+- Monthly update job (`scripts/monthly.sh`) with a systemd user timer.
+
+### Fixed
+
+- Earmarked gifts passed through WinRed, ActBlue and PAC conduits were counted twice.
+- Page titles are shortened to 70 characters.

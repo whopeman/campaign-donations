@@ -14,7 +14,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="Content-Security-Policy" content="{{ csp }}">
     <meta name="description" content="{% block description %}Donor tracking and aggregation for federal campaigns, from public FEC data.{% endblock %}">
-    <title>{% block title %}Campaign Donations{% endblock %} | Hopeman Horde</title>
+    {# The title block is defined here but printed (shortened) in <title> via self.title(). #}
+    {% if false %}{% block title %}Campaign Donations{% endblock %}{% endif %}
+    {# Browsers and html-validate want titles of 70 characters or fewer. #}
+    <title>{{ self.title() | trim | truncate(54, true, "...", 0) }} | Hopeman Horde</title>
     <link rel="stylesheet" href="{{ root }}css/site.css">
   </head>
   <body>

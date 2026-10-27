@@ -13,10 +13,14 @@
 #           scripts/fetch.sh bulk 2024 2026
 # Change log:
 #   2026-10-26  0.1.0  Initial version.
+#   2026-10-27  0.1.1  Resume big dumps; parallel range download over 1 GB.
 # =============================================================================
 set -euo pipefail
 
 DATA="${FEC_DATA:-$HOME/fec-data}"
+HERE="$(cd "$(dirname "$0")/.." && pwd)"
+UV="${UV:-$HOME/.local/bin/uv}"
+export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-$HOME/venvs/cd}"
 DUMPS="https://cg-519a459a-0ea3-42c2-b7bc-fa1143481f74.s3-us-gov-west-1.amazonaws.com/bulk-downloads/data-dump/schedules"
 BULK="https://www.fec.gov/files/bulk-downloads"
 DICT="$BULK/data_dictionaries"
@@ -42,6 +46,10 @@ get_big() {  # get_big <url> <dest>
     rm -f "$dest"
   fi
   echo "$etag" > "$etag_file"
+  # Files over 1 GB go through the parallel range downloader (src/cdpipe/fetch.py).
+  if [ "$want" -gt 1073741824 ]; then
+    (cd "$HERE" && "$UV" run -q python -m cdpipe.fetch "$url" "$dest" --workers 8) || return 1
+  fi
   while [ "$(stat -c %s "$dest" 2>/dev/null || echo 0)" != "$want" ]; do
     tries=$((tries + 1))
     [ "$tries" -gt 50 ] && { echo "giving up on $url" >&2; return 1; }
