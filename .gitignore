@@ -20,3 +20,6 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .check-sample/
+
+# Local-only Claude Code instructions (not published)
+CLAUDE.md
