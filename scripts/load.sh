@@ -11,6 +11,7 @@
 # Needs   : a PostgreSQL role for the current user with CREATEDB.
 # Change log:
 #   2026-10-26  0.1.0  Initial version.
+#   2026-10-28  0.1.0  Schedule A loads per partition and resumes after an interruption.
 # =============================================================================
 set -euo pipefail
 
@@ -55,10 +56,47 @@ small_dumps() {
 
 sched_a() {
   # Schedule A is partitioned by two-year period; keep only the cycles we publish.
-  local parts="fec_fitem_sched_a"
+  # Its restore takes hours, so each partition is loaded on its own and marked
+  # done; a rerun after an interruption loads only the unfinished partitions.
+  # Markers live under the dump's ETag, so a new FEC dump starts afresh.
+  local dump="$DATA/dump/fec_fitem_sched_a.dump" parts="fec_fitem_sched_a" toc tag state
   IFS=',' read -ra cy <<< "$CYCLES"
   for c in "${cy[@]}"; do parts="$parts|fec_fitem_sched_a_$((c - 1))_$c"; done
-  restore "$DATA/dump/fec_fitem_sched_a.dump" "$parts"
+  tag="$(tr -dc '0-9a-f-' < "$dump.etag")"
+  state="$DATA/state/sched_a/${tag:-no-etag}"
+  toc="$(mktemp)"
+  pg_restore -l "$dump" | grep -E " disclosure ($parts) " > "$toc"
+
+  if [[ ! -e "$state/schema.done" ]]; then
+    log "restore sched_a tables (new dump $tag)"
+    rm -rf "$DATA/state/sched_a"
+    mkdir -p "$state"
+    psql_db -c "DROP TABLE IF EXISTS disclosure.fec_fitem_sched_a CASCADE"
+    grep -E '; [0-9]+ [0-9]+ TABLE disclosure ' "$toc" > "$toc.schema"
+    pg_restore --no-acl --no-owner -d "$DB" -L "$toc.schema" "$dump"
+    touch "$state/schema.done"
+  fi
+
+  # One line per partition still to load, run JOBS at a time.
+  grep -E 'TABLE DATA disclosure ' "$toc" | while read -r entry; do
+    t="$(awk '{print $(NF-1)}' <<< "$entry")"
+    [[ -e "$state/$t.done" ]] || echo "$t"
+  done > "$toc.todo"
+  log "sched_a partitions to load: $(tr '\n' ' ' < "$toc.todo")"
+  export -f log psql_db
+  export DB dump toc state
+  # shellcheck disable=SC2016  # expanded by the inner bash
+  xargs -r -P "$JOBS" -n 1 bash -c '
+    set -euo pipefail
+    t="$1"
+    grep -E "TABLE DATA disclosure $t " "$toc" > "$toc.$t"
+    log "load $t"
+    psql_db -c "TRUNCATE ONLY disclosure.$t"
+    pg_restore --no-acl --no-owner -d "$DB" -L "$toc.$t" "$dump"
+    touch "$state/$t.done"
+    log "loaded $t"
+  ' _ < "$toc.todo"
+  rm -f "$toc" "$toc".*
   psql_db -c "ANALYZE disclosure.fec_fitem_sched_a"
 }
 

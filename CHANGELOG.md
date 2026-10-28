@@ -28,6 +28,7 @@ All notable changes are listed here. The format follows
 - Database load (`scripts/load.sh`, `sql/`) and streaming renderer from PostgreSQL.
 - Parallel range downloader for the 91 GB Schedule A dump.
 - Monthly update job (`scripts/monthly.sh`) with a systemd user timer.
+- Schedule A restore runs per partition and resumes where it stopped.
 
 ### Fixed
 
