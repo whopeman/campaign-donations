@@ -29,6 +29,8 @@ All notable changes are listed here. The format follows
 - Parallel range downloader for the 91 GB Schedule A dump.
 - Monthly update job (`scripts/monthly.sh`) with a systemd user timer.
 - Schedule A restore runs per partition and resumes where it stopped.
+- Schedule A is loaded narrow (17 of about 80 columns) through `cdpipe.narrow`,
+  with a free-space check before each cycle and a watchdog during the load.
 
 ### Fixed
 

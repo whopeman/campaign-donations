@@ -13,6 +13,7 @@
 --             because the same spending is reported again on regular reports.
 -- Change log:
 --   2026-10-26  0.1.0  Initial version.
+--   2026-10-28  0.1.0  Read the narrow disclosure.sched_a (sql/15_sched_a.sql).
 -- =============================================================================
 \set ON_ERROR_STOP on
 CREATE SCHEMA IF NOT EXISTS site;
@@ -71,8 +72,8 @@ CREATE TABLE site.gift (
 INSERT INTO site.gift
 SELECT site.donor_key(a.contbr_nm, a.contbr_zip), cc.cand_id, cc.cycle, a.contb_receipt_amt,
        true, 'Contribution', a.contb_receipt_dt::date,
-       coalesce(a.pdf_url, 'https://docquery.fec.gov/cgi-bin/fecimg/?' || a.image_num), a.sub_id
-FROM disclosure.fec_fitem_sched_a a
+       'https://docquery.fec.gov/cgi-bin/fecimg/?' || a.image_num, a.sub_id
+FROM disclosure.sched_a a
 JOIN site.cand_cmte cc ON cc.cmte_id = a.cmte_id AND cc.cycle = a.two_year_transaction_period
 WHERE a.is_individual AND a.memo_cd IS NULL;
 
@@ -132,7 +133,7 @@ WITH ind AS (  -- most recent name/address seen for each individual key
          contbr_st AS state, contbr_employer AS employer, contbr_occupation AS occupation
   FROM (
     SELECT site.donor_key(a.contbr_nm, a.contbr_zip) AS k, a.*
-    FROM disclosure.fec_fitem_sched_a a
+    FROM disclosure.sched_a a
     JOIN site.cand_cmte cc ON cc.cmte_id = a.cmte_id AND cc.cycle = a.two_year_transaction_period
     WHERE a.is_individual AND a.memo_cd IS NULL
   ) s

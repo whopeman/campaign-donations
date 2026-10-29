@@ -55,7 +55,12 @@ can be read without telling colours apart.
 - WSL (Ubuntu) with PostgreSQL 16+ and a role for your user that can create databases.
 - [uv](https://docs.astral.sh/uv/) in WSL for Python (3.12+).
 - Node.js 20+ on Windows for HTML validation and the one-off map build.
-- About 400 GB free in WSL for the raw dumps and the restored database.
+- About 250 GB free on the Windows drive that holds the WSL disk, for the raw
+  dumps and the database. The WSL disk grows into that drive, so the Windows free
+  space is the real limit; set the distro to sparse
+  (`wsl --manage <distro> --set-sparse true`) so freed space is returned.
+  `scripts/load.sh` stops a Schedule A load when free space drops below
+  `CD_MIN_FREE_GB` (default 40).
 - Optional: an NVIDIA GPU with the WSL CUDA driver, for `use_gpu`.
 
 ## Setup and build
