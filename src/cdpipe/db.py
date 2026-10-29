@@ -8,6 +8,8 @@ Purpose : Render the site from the "site" schema built by sql/20_site.sql.
 Usage   : build_from_db(site, flags, dsn="dbname=fec")
 Change log:
   2026-10-26  0.1.0  Initial version.
+  2026-10-29  0.1.0  Data through-date (site.meta, #4) and records left out
+                     (site.excluded_gift, #3), read before the shared pages.
 """
 
 from __future__ import annotations
@@ -22,7 +24,7 @@ from psycopg import sql
 from cdpipe import states
 from cdpipe.flags import Flags
 from cdpipe.format import clean_name
-from cdpipe.models import Candidate, CandidateTotals, Donor, Gift
+from cdpipe.models import Candidate, CandidateTotals, Donor, Excluded, Gift
 from cdpipe.render import Site
 
 DONOR_ROWS_PER_CYCLE = 500  # donor rows listed on a candidate page, per cycle
@@ -64,6 +66,31 @@ def _totals(cur, schema: str) -> dict[tuple[str, int], CandidateTotals]:
         ).format(sql.Identifier(schema))
     )
     return {(r[0], r[1]): CandidateTotals(*map(float, r[2:])) for r in cur.fetchall()}
+
+
+def _meta(cur, schema: str) -> dict[str, str]:
+    """site.meta key/values, or nothing for a schema built before it existed."""
+    cur.execute("SELECT to_regclass(%s)", (f"{schema}.meta",))
+    if cur.fetchone()[0] is None:
+        return {}
+    cur.execute(sql.SQL("SELECT key, value FROM {}.meta").format(sql.Identifier(schema)))
+    return dict(cur.fetchall())
+
+
+def _excluded(cur, schema: str, cands: dict[str, Candidate]) -> list[Excluded]:
+    cur.execute("SELECT to_regclass(%s)", (f"{schema}.excluded_gift",))
+    if cur.fetchone()[0] is None:
+        return []
+    cur.execute(
+        sql.SQL(
+            "SELECT cand_id, cycle, amount, gift_date, source_url, reason FROM {}.excluded_gift"
+        ).format(sql.Identifier(schema))
+    )
+    return [
+        Excluded(cands[r[0]], r[1], float(r[2]), r[3].isoformat() if r[3] else None, r[4], r[5])
+        for r in cur.fetchall()
+        if r[0] in cands
+    ]
 
 
 def _candidate_rows(conn, schema: str, cand_id: str):
@@ -119,11 +146,15 @@ def _top_donors(conn, schema: str, state: str) -> list[tuple[Donor, float]]:
 def build_from_db(site: Site, flags: Flags, dsn: str | None = None, schema: str = "site") -> dict:
     dsn = dsn or os.environ.get("CD_DSN", "dbname=fec")
     counts = {"candidates": 0, "donors": 0}
-    site.common_pages()
     with psycopg.connect(dsn) as conn:
         with conn.cursor() as cur:
             cands = _candidates(cur, schema)
             totals = _totals(cur, schema)
+            meta = _meta(cur, schema)
+            site.excluded = _excluded(cur, schema, cands)
+        site.data_through = meta.get("sched_a_through")
+        site.data_cycle = int(meta["sched_a_cycle"]) if meta.get("sched_a_cycle") else None
+        site.common_pages()
 
         for s in states.STATES:
             mine = [c for c in cands.values() if c.state == s.code]

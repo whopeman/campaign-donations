@@ -6,6 +6,7 @@
             dark themes.
   Change log:
     2026-10-26  0.1.0  Initial version.
+    2026-10-29  0.1.0  .as-of data date notice.
 */
 :root {
   --bg: #ffffff;
@@ -60,3 +61,4 @@ th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
 section { overflow-x: auto; }
 footer.site { margin-top: 48px; padding-top: 12px; padding-bottom: 32px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; }
 .notice { font-style: italic; }
+.as-of { border-left: 4px solid var(--muted); padding: 4px 12px; color: var(--muted); }

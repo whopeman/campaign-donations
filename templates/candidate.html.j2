@@ -6,6 +6,7 @@
             with a totals table, then every donor in detail with sources.
   Change log:
     2026-10-26  0.1.0  Initial version.
+    2026-10-29  0.1.0  FEC links without ?cycle= (fec.gov 404s for some years).
 #}
 {% extends "base.html.j2" %}
 {% block title %}{{ c.name }}{% endblock %}
@@ -25,7 +26,7 @@
         </figure>
         {% set total = slices | sum(attribute="amount") %}
         <table>
-          <caption>Money for and against, {{ cycle }} (<a href="{{ c.fec_url }}?cycle={{ cycle }}">source</a>)</caption>
+          <caption>Money for and against, {{ cycle }} (<a href="{{ c.fec_url }}">source</a>)</caption>
           <thead><tr><th scope="col">Source of money</th><th scope="col">For or against</th><th scope="col" class="num">Amount</th><th scope="col" class="num">Share</th></tr></thead>
           <tbody>
 {% for s in slices %}
@@ -54,7 +55,7 @@
 {% endif %}
 {% if more %}
         <p class="more">Plus {{ "{:,}".format(more[0]) }} smaller donors giving {{ more[1] | usd }} in total, not listed here.
-          Search them on the <a href="{{ c.fec_url }}?cycle={{ cycle }}">FEC candidate page</a>.</p>
+          Search them on the <a href="{{ c.fec_url }}">FEC candidate page</a>.</p>
 {% endif %}
       </section>
 {% endfor %}

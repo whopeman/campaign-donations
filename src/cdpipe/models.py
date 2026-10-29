@@ -7,6 +7,7 @@ Purpose : Plain data records passed from the database layer to the page
 Change log:
   2026-10-26  0.1.0  Initial version.
   2026-10-28  0.1.0  Short page paths (IDs and codes) in place of name slugs.
+  2026-10-29  0.1.0  Excluded: a Schedule A record left out of the totals.
 """
 
 from __future__ import annotations
@@ -144,3 +145,16 @@ class CandidateTotals:
     ie_support: float  # independent expenditures supporting
     ie_oppose: float  # independent expenditures opposing
     other_individual: float = 0  # unitemized (under $200) individual contributions
+
+
+@dataclass(frozen=True)
+class Excluded:
+    """A Schedule A record left out of totals and donor pages (issue #3).
+    The contributor's name is deliberately not carried."""
+
+    candidate: Candidate
+    cycle: int
+    amount: float
+    date: str | None
+    source_url: str | None
+    reason: str

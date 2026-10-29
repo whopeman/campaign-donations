@@ -38,6 +38,37 @@ All notable changes are listed here. The format follows
 - The site refuses to write two pages to one path.
 - QA test plan (`docs/qa/test-plan.md`), data validation checks
   (`sql/90_validate.sql`) and the first validation report.
+- `scripts/validate.sh`: runs the data checks with exit codes 0 (pass), 1 (a check
+  failed) and 2 (the checks could not run). `scripts/monthly.sh` runs it as a
+  `validate` step, and `deploy` waits for it.
+- "Records left out" page listing excluded Schedule A records with their filings,
+  and the `max_individual_gift_usd` flag (default 20,000).
+- Every page says how current the itemized data is ("Itemized gifts are loaded
+  through ...").
+
+### Fixed
+
+- Amended reports were counted together with the reports they replace (#1).
+  Schedule A now keeps `file_num`, `rpt_tp` and `rpt_yr`, and a filing re-filed in
+  full by a later one is dropped.
+- A committee linked to two candidate IDs in one cycle counted every gift twice (#2).
+- Implausible "individual" gifts (filer typos, committees flagged as individuals)
+  were published under private names (#3). They are now left out of totals and
+  donor pages.
+- No page said how current the data is (#4).
+- Placeholder names got donor pages, and undated rows could supply a donor's
+  details (#5).
+- Data checks (code review of PR #6): V2 skipped candidates with no FEC summary;
+  V3 compared raw surnames and ignored negative amounts; V4 missed punctuated
+  placeholders; V5 and V6 could never fail; V7 could read a cycle with no
+  Schedule A rows; a SQL error looked like a data failure.
+- About 60% of the "FEC" links on state pages, and the "source" links on candidate
+  pages, opened an FEC 404 page: fec.gov rejects `?cycle=` for years in which it
+  does not count the person as a candidate. The links now open the candidate's
+  FEC overview without a cycle.
+- A committee missing from both FEC committee lists got a donor page titled with
+  the internal key (`c:C00607698`). It is now named "Committee C00607698" and links
+  to its FEC page.
 
 ### Fixed
 

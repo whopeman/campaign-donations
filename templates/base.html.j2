@@ -7,6 +7,7 @@
             the FEC data-use notice and sources.
   Change log:
     2026-10-26  0.1.0  Initial version.
+    2026-10-29  0.1.0  How current the itemized data is, on every page (#4).
 #}
 <html lang="en">
   <head>
@@ -30,6 +31,11 @@
       </nav>
     </header>
     <main id="main">
+{% if data_through %}
+      <p class="as-of">Itemized gifts are loaded through {{ data_through | long_date }}{% if data_cycle %}
+        for the {{ data_cycle - 1 }}&ndash;{{ data_cycle }} cycle{% endif %}. Later FEC reports
+        are not processed yet, so recent totals are incomplete.</p>
+{% endif %}
 {% block content %}{% endblock %}
     </main>
     <footer class="site">

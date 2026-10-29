@@ -7,9 +7,12 @@
 --           FEC dump). Partitions, one per cycle, are added by scripts/load.sh.
 --           The filing link is built from image_num; the dump's pdf_url is the
 --           same link (checked 2026-10-28), so it is not kept.
+--           file_num, rpt_tp and rpt_yr identify the filing (report) each row
+--           came from, so rows of superseded filings can be dropped (#1).
 -- Usage   : psql -d fec -f sql/15_sched_a.sql   (via scripts/load.sh sched_a)
 -- Change log:
 --   2026-10-28  0.1.0  Initial version.
+--   2026-10-29  0.1.0  file_num, rpt_tp, rpt_yr (amended reports, #1).
 -- =============================================================================
 \set ON_ERROR_STOP on
 CREATE SCHEMA IF NOT EXISTS disclosure;
@@ -31,5 +34,8 @@ CREATE TABLE disclosure.sched_a (
   contb_receipt_dt timestamp,
   contb_receipt_amt numeric(14, 2),
   image_num varchar(18),
-  conduit_cmte_id varchar(9)
+  conduit_cmte_id varchar(9),
+  file_num numeric(7, 0),
+  rpt_tp varchar(3),
+  rpt_yr numeric(4, 0)
 ) PARTITION BY LIST (two_year_transaction_period);

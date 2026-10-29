@@ -6,6 +6,7 @@
   Change log:
     2026-10-26  0.1.0  Created from the Framework_Website_HopemanHorde template, then
                        rewritten for the FEC pipeline.
+    2026-10-29  0.1.0  Data validation, max_individual_gift_usd, validate step.
 -->
 
 # Campaign Donations
@@ -81,7 +82,13 @@ uv run pytest
 uv run ruff check . && uv run ruff format --check .
 uv run pip-audit
 npm install && npm run lint:html            # Windows or WSL
+CD_TEST_DSN="dbname=fec" uv run pytest      # also the database and SQL tests (WSL)
+scripts/validate.sh                         # data checks on the loaded database
 ```
+
+`scripts/validate.sh` runs `sql/90_validate.sql` and exits 0 when every check
+passes (warnings allowed), 1 when a check fails and 2 when the checks could not
+run. See `docs/qa/test-plan.md`.
 
 ## Feature flags
 
@@ -95,6 +102,7 @@ Set in `config/flags.toml`, or override per run with `CD_<NAME>`, for example
 | `donor_page_threshold_usd` | `15000`            | Individuals need this much in a cycle for a page |
 | `offices`                  | `["H", "S"]`       | Offices to include                          |
 | `county_view`              | `false`            | County breakdown on state pages (preview)   |
+| `max_individual_gift_usd`  | `20000`            | Larger single "individual" gifts not from the candidate are left out and listed on the "Records left out" page |
 
 ## Deploy
 
@@ -111,9 +119,10 @@ Uploads go only into `public_html/campaign-donations/`.
 ## Monthly updates
 
 `scripts/monthly.sh` runs the whole update as separate, logged steps
-(`fetch-bulk`, `fetch-dumps`, `load-bulk`, `load-dumps`, `site`, `render`,
-`check`, `deploy`, `renew-limit`). A failed step skips only the steps that
-depend on it. Logs go to `~/fec-data/monthly/<date>.log`. Any step can be run
+(`fetch-bulk`, `fetch-dumps`, `load-bulk`, `load-dumps`, `site`, `validate`,
+`render`, `check`, `deploy`, `renew-limit`). A failed step skips only the steps
+that depend on it: when `validate` fails the site is still rendered for review,
+but not deployed. Logs go to `~/fec-data/monthly/<date>.log`. Any step can be run
 alone, for example `scripts/monthly.sh render check`.
 
 The new site is rendered to `~/site-out.new` and swapped in only when the

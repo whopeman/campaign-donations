@@ -6,6 +6,7 @@
   Change log:
     2026-10-26  0.1.0  Initial version.
     2026-10-28  0.1.0  Candidate links use Candidate.path.
+    2026-10-29  0.1.0  FEC links without ?cycle= (fec.gov 404s for some years).
 #}
 {% extends "base.html.j2" %}
 {% block title %}{{ state.name }}{% endblock %}
@@ -28,7 +29,7 @@
               <td>{{ c.party_full }}</td>
               <td>{{ c.office_full }}</td>
               <td>{{ "Incumbent" if c.incumbent else "Challenger or open seat" }}</td>
-              <td><a href="{{ c.fec_url }}?cycle={{ cycle }}">FEC</a></td>
+              <td><a href="{{ c.fec_url }}">FEC</a></td>
             </tr>
 {% endfor %}
           </tbody>

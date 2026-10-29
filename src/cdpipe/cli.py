@@ -7,6 +7,7 @@ Usage   : cdpipe demo  [--out site]   render a small made-up data set (layout ch
           cdpipe build [--out site]   render the site from the PostgreSQL database
 Change log:
   2026-10-26  0.1.0  Initial version with the demo command.
+  2026-10-29  0.1.0  Pass max_individual_gift_usd to the renderer (about page).
 """
 
 from __future__ import annotations
@@ -50,7 +51,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=Path("site"))
     args = ap.parse_args(argv)
     flags = load_flags()
-    site = Site(out_dir=args.out, cycles=flags.cycles, generated=dt.date.today().isoformat())
+    site = Site(
+        out_dir=args.out,
+        cycles=flags.cycles,
+        generated=dt.date.today().isoformat(),
+        max_gift=flags.max_individual_gift_usd,
+    )
     if args.command == "demo":
         site.build(*_demo_data())
     else:

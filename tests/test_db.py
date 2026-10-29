@@ -8,6 +8,8 @@ Purpose : Integration test: render pages from a small "site"-shaped schema in
 Change log:
   2026-10-26  0.1.0  Initial tests.
   2026-10-28  0.1.0  Short page paths.
+  2026-10-29  0.1.0  Data through-date (site.meta) and records left out
+                     (site.excluded_gift).
 """
 
 import os
@@ -30,6 +32,12 @@ CREATE TABLE {SCHEMA}.gift (donor_key text, cand_id text, cycle int, amount nume
   support boolean, via text, gift_date date, source_url text, sub_id bigint);
 CREATE TABLE {SCHEMA}.donor (donor_key text, name text, kind text, city text, state text,
   employer text, occupation text, cmte_id text, has_page boolean);
+CREATE TABLE {SCHEMA}.meta (key text PRIMARY KEY, value text);
+CREATE TABLE {SCHEMA}.excluded_gift (cand_id text, cycle int, amount numeric, gift_date date,
+  source_url text, reason text, sub_id bigint);
+INSERT INTO {SCHEMA}.meta VALUES ('sched_a_through', '2024-06-30'), ('sched_a_cycle', '2024');
+INSERT INTO {SCHEMA}.excluded_gift VALUES
+  ('H4NY00001', 2024, 3958610, '2024-04-11', 'https://f/9', 'Above the plausible limit', 9);
 INSERT INTO {SCHEMA}.candidate VALUES
   ('H4NY00001', 2022, 'DOE, JANE', 'DEM', 'H', 'NY', '12', false, 'C1'),
   ('H4NY00001', 2024, 'DOE, JANE', 'DEM', 'H', 'NY', '12', true, 'C1');
@@ -79,3 +87,7 @@ def test_build_from_db(tmp_path, db):
 
     ny = (tmp_path / "states/ny/index.html").read_text(encoding="utf-8")
     assert "DOE, JANE" in ny and "SMITH, ALICE" in ny
+    assert "through June 30, 2024" in ny
+
+    left_out = (tmp_path / "excluded.html").read_text(encoding="utf-8")
+    assert "$3,958,610" in left_out and "https://f/9" in left_out

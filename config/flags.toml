@@ -7,6 +7,7 @@
 # Change log:
 #   2026-10-26  0.1.0  Initial flags.
 #   2026-10-28  0.1.0  Donor page threshold 15000 (hosting inode limit).
+#   2026-10-29  0.1.0  max_individual_gift_usd (issue #3).
 # =============================================================================
 
 # Use the NVIDIA GPU (RAPIDS cuDF) for donor entity matching. Reserved for
@@ -19,6 +20,12 @@ cycles = [2016, 2018, 2020, 2022, 2024, 2026]
 # Individual donors get their own page only when their total for a single
 # cycle reaches this many US dollars. Committees and PACs always get a page.
 donor_page_threshold_usd = 15000
+
+# A single "individual" gift above this many US dollars (either sign) that is
+# not from the candidate is treated as a filing error and left out of totals
+# and donor pages; it is listed on the "Records left out" page instead. One
+# check can legitimately cover several elections (about $10,500 in 2026).
+max_individual_gift_usd = 20000
 
 # Phase 1 focuses on the House; Senate and President pages can follow.
 offices = ["H", "S"]

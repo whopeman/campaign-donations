@@ -8,13 +8,16 @@ Purpose : The renderer writes every page type, links candidates and donors
 Change log:
   2026-10-26  0.1.0  Initial tests.
   2026-10-28  0.1.0  Short page paths (one inode per file name).
+  2026-10-29  0.1.0  Data through-date on every page (#4); records-left-out
+                     page (#3); negative totals explained (#5).
+  2026-10-29  0.1.0  FEC candidate links without ?cycle= (fec.gov 404s).
 """
 
 from pathlib import Path
 
 import pytest
 
-from cdpipe.models import Candidate, CandidateTotals, Donor, Gift
+from cdpipe.models import Candidate, CandidateTotals, Donor, Excluded, Gift
 from cdpipe.render import Site
 
 
@@ -216,3 +219,48 @@ def test_two_pages_with_one_path_is_an_error(tmp_path):
     site._write("about.html", "about.html.j2")
     with pytest.raises(ValueError, match="about.html"):
         site._write("about.html", "about.html.j2")
+
+
+def test_pages_say_how_current_the_data_is(tmp_path, data):
+    cands, donors, gifts, totals = data
+    site = Site(out_dir=tmp_path, cycles=(2024,), generated="2026-10-29")
+    site.data_through, site.data_cycle = "2024-06-30", 2024
+    site.build(cands, donors, gifts, totals)
+    for rel in ("index.html", "about.html", "states/ny/index.html", "candidates/ny/h4ny12345.html"):
+        assert "through June 30, 2024" in read(tmp_path, rel), rel
+
+
+def test_no_through_date_when_the_database_has_none(built):
+    assert "Itemized gifts are loaded through" not in read(built, "index.html")
+
+
+def test_records_left_out_page_lists_them_without_names(tmp_path, data):
+    cands, donors, gifts, totals = data
+    site = Site(out_dir=tmp_path, cycles=(2024,), generated="2026-10-29", max_gift=20000)
+    site.excluded = [
+        Excluded(
+            cands[0],
+            2024,
+            3958610,
+            "2024-04-11",
+            "https://docquery.fec.gov/x?9",
+            "Above the plausible limit for one person",
+        ),
+    ]
+    site.build(cands, donors, gifts, totals)
+    html = read(tmp_path, "excluded.html")
+    assert "$3,958,610" in html and "https://docquery.fec.gov/x?9" in html
+    assert 'href="candidates/ny/h4ny12345.html"' in html
+    assert "$20,000" in html
+    about = read(tmp_path, "about.html")
+    assert 'href="excluded.html"' in about
+    assert "negative" in about  # net totals after refunds (#5)
+
+
+def test_fec_candidate_links_carry_no_cycle(built):
+    # fec.gov answers 404 for ?cycle= years in which it does not count the
+    # person as a candidate (a Senate seat counts only its election year).
+    for rel in ("states/ny/index.html", "candidates/ny/h4ny12345.html"):
+        html = read(built, rel)
+        assert "https://www.fec.gov/data/candidate/H4NY12345/" in html
+        assert "?cycle=" not in html

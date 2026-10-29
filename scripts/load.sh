@@ -14,6 +14,8 @@
 #   2026-10-28  0.1.0  Schedule A loads per partition and resumes after an interruption.
 #   2026-10-28  0.1.0  Schedule A keeps only the columns the site uses, and stops
 #                      before a partition when free space is short.
+#   2026-10-29  0.1.0  Schedule A keeps file_num, rpt_tp, rpt_yr (amendments, #1);
+#                      site gets max_individual_gift_usd (#3).
 # =============================================================================
 set -euo pipefail
 
@@ -25,6 +27,8 @@ OFFICES="${CD_OFFICES:-H,S}"
 # Same flag the renderer reads (config/flags.toml), so the two always agree.
 THRESHOLD="${CD_DONOR_PAGE_THRESHOLD_USD:-$(awk -F' *= *' \
   '/^donor_page_threshold_usd/ {print $2}' "$HERE/config/flags.toml")}"
+MAX_GIFT="${CD_MAX_INDIVIDUAL_GIFT_USD:-$(awk -F' *= *' \
+  '/^max_individual_gift_usd/ {print $2}' "$HERE/config/flags.toml")}"
 JOBS="${JOBS:-3}"
 PY="${CD_PYTHON:-$HOME/venvs/cd/bin/python}"
 # Free space (GB) required before each Schedule A partition, both inside WSL
@@ -33,7 +37,7 @@ MIN_FREE_GB="${CD_MIN_FREE_GB:-40}"
 # Schedule A columns the site (sql/20_site.sql) and later phases use.
 SCHED_A_COLS="sub_id,cmte_id,two_year_transaction_period,entity_tp,is_individual,receipt_tp,\
 memo_cd,contbr_nm,contbr_city,contbr_st,contbr_zip,contbr_employer,contbr_occupation,\
-contb_receipt_dt,contb_receipt_amt,image_num,conduit_cmte_id"
+contb_receipt_dt,contb_receipt_amt,image_num,conduit_cmte_id,file_num,rpt_tp,rpt_yr"
 step="${1:-all}"
 log() { echo "$(date -Is) $*"; }
 psql_db() { psql -X -q -v ON_ERROR_STOP=1 -d "$DB" "$@"; }
@@ -171,7 +175,7 @@ bulk() {
 site() {
   log "build site schema"
   psql_db -v cycles="{$CYCLES}" -v offices="{$OFFICES}" -v threshold="$THRESHOLD" \
-    -f "$HERE/sql/20_site.sql"
+    -v max_gift="${MAX_GIFT:-20000}" -f "$HERE/sql/20_site.sql"
 }
 
 case "$step" in

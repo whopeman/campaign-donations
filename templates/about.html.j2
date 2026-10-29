@@ -33,6 +33,36 @@
           as a total per candidate.</li>
         <li>Memo entries are left out so that earmarked gifts are not counted twice.</li>
       </ul>
+      <h2>How current it is</h2>
+{% if data_through %}
+      <p>Itemized gifts are loaded through {{ data_through | long_date }}. The FEC processes
+        reports weeks after they are filed, so the newest months are incomplete, and a
+        candidate who started raising money recently can show less here than on the FEC's
+        own summary.</p>
+{% else %}
+      <p>The FEC processes reports weeks after they are filed, so the newest months are
+        incomplete.</p>
+{% endif %}
+      <h2>Corrections made to the FEC records</h2>
+      <ul>
+        <li><strong>Amended reports.</strong> When a committee re-files a report in full, only
+          the newest filing is counted. A smaller later filing (a partial amendment, or a
+          separate report for another period) is counted alongside the original.</li>
+        <li><strong>One committee, two candidate IDs.</strong> When the FEC links a committee to
+          two candidate IDs in one cycle (a candidate who re-registered, or ran for another
+          seat), its money is counted once, for the candidate whose committee it is in that
+          election.</li>
+        <li><strong>Records left out.</strong> A single "individual" gift above
+          {{ max_gift | usd }} that the candidate did not give is almost always a filing error
+          (one check can legitimately cover several elections, but not this much), and so are
+          committees reported as individuals. These records are left out of every total and
+          donor page, and are <a href="excluded.html">listed with their filings</a> so they
+          can be checked.</li>
+        <li><strong>Placeholder names</strong> such as "Anonymous" or "Unknown" are not people,
+          so they get no donor page.</li>
+        <li><strong>Totals are net of refunds.</strong> A donor whose refunds were larger than
+          their gifts in the years shown has a negative total.</li>
+      </ul>
       <h2>Charts</h2>
       <p>Every chart uses both colour and a fill pattern (stripes, dots, cross-hatching) for each
         series, and lists every value in text, so it can be read without telling colours apart.</p>

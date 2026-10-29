@@ -11,14 +11,17 @@ Usage   : Site(out_dir=Path("site"), cycles=(2024,), generated="2026-10-26")
 Change log:
   2026-10-26  0.1.0  Initial version.
   2026-10-28  0.1.0  Candidate pages at Candidate.path; refuse duplicate page paths.
+  2026-10-29  0.1.0  Data through-date on every page (#4); "Records left out"
+                     page, excluded.html (#3).
 """
 
 from __future__ import annotations
 
+import datetime as dt
 import json
 import shutil
 from collections import defaultdict
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -27,7 +30,15 @@ from markupsafe import Markup, escape
 from cdpipe import __version__, states
 from cdpipe.charts import Bar, Slice, pie_svg, stacked_bars_svg
 from cdpipe.format import pct, usd
-from cdpipe.models import Candidate, CandidateTotals, Donor, Gift, party_kind, party_name
+from cdpipe.models import (
+    Candidate,
+    CandidateTotals,
+    Donor,
+    Excluded,
+    Gift,
+    party_kind,
+    party_name,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATES = ROOT / "templates"
@@ -68,6 +79,14 @@ def combine_by_candidate(gifts: list[Gift]) -> list[Gift]:
     return list(rows.values())
 
 
+def long_date(iso: str | None) -> str:
+    """2026-06-30 -> June 30, 2026."""
+    if not iso:
+        return ""
+    d = dt.date.fromisoformat(iso)
+    return f"{d:%B} {d.day}, {d.year}"
+
+
 def _svg(markup: str) -> Markup:
     """Mark SVG we generated as safe. charts.py and map_svg escape every data value."""
     return Markup(markup)  # noqa: S704
@@ -98,6 +117,10 @@ class Site:
     out_dir: Path
     cycles: tuple[int, ...]
     generated: str
+    max_gift: int = 20000  # flags.max_individual_gift_usd, explained on the about page
+    data_through: str | None = None  # last fully loaded day of itemized gifts (site.meta)
+    data_cycle: int | None = None  # the cycle that date belongs to
+    excluded: list[Excluded] = field(default_factory=list)  # records left out (#3)
 
     def __post_init__(self):
         self.env = Environment(
@@ -108,6 +131,7 @@ class Site:
         )
         self.env.filters["usd"] = usd
         self.env.filters["party"] = party_name
+        self.env.filters["long_date"] = long_date
         self.env.globals.update(version=__version__, generated=self.generated, csp=CSP, pct=pct)
         self._written: set[str] = set()
 
@@ -120,7 +144,13 @@ class Site:
         self._written.add(rel)
         depth = rel.count("/")
         root = "../" * depth
-        html = self.env.get_template(template).render(root=root, **ctx)
+        html = self.env.get_template(template).render(
+            root=root,
+            data_through=self.data_through,
+            data_cycle=self.data_cycle,
+            max_gift=self.max_gift,
+            **ctx,
+        )
         dest = self.out_dir / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(html, encoding="utf-8", newline="\n")
@@ -174,6 +204,11 @@ class Site:
             cycles=self.cycles,
         )
         self._write("about.html", "about.html.j2")
+        self._write(
+            "excluded.html",
+            "excluded.html.j2",
+            rows=sorted(self.excluded, key=lambda e: -abs(e.amount)),
+        )
 
     def state_page(self, s, mine: list[Candidate], top: list[tuple[Donor, float]]) -> None:
         rows = defaultdict(list)  # (cycle, office) -> candidates

@@ -5,6 +5,7 @@ Date    : 2026-10-26
 Purpose : Feature flags load from TOML and can be overridden by environment.
 Change log:
   2026-10-26  0.1.0  Initial tests.
+  2026-10-29  0.1.0  max_individual_gift_usd (#3).
 """
 
 import pytest
@@ -53,3 +54,9 @@ def test_rejects_bad_bool(flags_file):
 def test_rejects_odd_cycle(flags_file):
     with pytest.raises(ValueError, match="cycle"):
         load_flags(flags_file, env={"CD_CYCLES": "2023"})
+
+
+def test_max_individual_gift_defaults_and_overrides(flags_file):
+    assert load_flags(flags_file, env={}).max_individual_gift_usd == 20000
+    flags = load_flags(flags_file, env={"CD_MAX_INDIVIDUAL_GIFT_USD": "15000"})
+    assert flags.max_individual_gift_usd == 15000

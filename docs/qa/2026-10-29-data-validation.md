@@ -6,12 +6,13 @@
             build deployed on 2026-10-29 (commit 6e92908).
   Change log:
     2026-10-29  0.1.0  Created (QA, Riker).
+    2026-10-29  0.1.0  Verdict lists #5 too (code review of PR #6).
 -->
 
 # QA run, 2026-10-29: system check and data validation
 
 **Build:** `main` at 6e92908, deployed 2026-10-29. FEC data downloaded 2026-10-26/27.
-**Verdict:** the code checks pass, but **the data does not meet the test plan's exit criteria**. Three high-severity data bugs are filed (#1, #2, #3) and one medium (#4). In recent cycles (2020, 2024) the totals match the FEC within 0.3%. In 2016 and 2018 Senate, and in individual records, they don't.
+**Verdict:** the code checks pass, but **the data does not meet the test plan's exit criteria**. Three high-severity data bugs are filed (#1, #2, #3), one medium (#4) and one low (#5). In recent cycles (2020, 2024) the totals match the FEC within 0.3%. In 2016 and 2018 Senate, and in individual records, they don't.
 
 ## Results
 

@@ -6,8 +6,11 @@
 # Purpose : Monthly update. Each step runs on its own and is logged; a failed
 #           step stops only the steps that depend on it:
 #             fetch-bulk -> load-bulk --------+
-#             fetch-dumps --(+ load-bulk)-> load-dumps -> site -> render -> check -> deploy
+#             fetch-dumps --(+ load-bulk)-> load-dumps -> site -> render -> check -+-> deploy
+#                                                         site -> validate --------+
 #           (Schedule A is filtered by the committee list in the bulk files.)
+#           validate runs the data checks (scripts/validate.sh); the site is
+#           still rendered when it fails, for review, but not deployed.
 #           Deploy runs only when CD_AUTO_DEPLOY=true (off by default).
 # Usage   : (WSL) scripts/monthly.sh            # all steps
 #           scripts/monthly.sh render check     # just these steps
@@ -15,6 +18,7 @@
 # Change log:
 #   2026-10-27  0.1.0  Initial version.
 #   2026-10-28  0.1.0  load-dumps waits for load-bulk.
+#   2026-10-29  0.1.0  validate step; deploy needs it (QA test plan exit criteria).
 # =============================================================================
 # Step functions are called through run(), which shellcheck cannot follow.
 # shellcheck disable=SC2329
@@ -94,7 +98,7 @@ renew_limit() {
 }
 
 steps=("$@")
-[ ${#steps[@]} -eq 0 ] && steps=(fetch-bulk fetch-dumps load-bulk load-dumps site render check deploy renew-limit)
+[ ${#steps[@]} -eq 0 ] && steps=(fetch-bulk fetch-dumps load-bulk load-dumps site validate render check deploy renew-limit)
 for s in "${steps[@]}"; do
   case "$s" in
     fetch-bulk)  run "$s" bash "$HERE/scripts/fetch.sh" bulk ;;
@@ -102,9 +106,10 @@ for s in "${steps[@]}"; do
     load-bulk)   needs fetch-bulk && run "$s" bash "$HERE/scripts/load.sh" bulk ;;
     load-dumps)  needs fetch-dumps load-bulk && run "$s" bash -c "'$HERE/scripts/load.sh' small && '$HERE/scripts/load.sh' sched_a" ;;
     site)        needs load-bulk load-dumps && run "$s" bash "$HERE/scripts/load.sh" site ;;
+    validate)    needs site && run "$s" bash "$HERE/scripts/validate.sh" ;;
     render)      needs site && run "$s" render ;;
     check)       needs render && run "$s" check ;;
-    deploy)      needs check && run "$s" deploy ;;
+    deploy)      needs check validate && run "$s" deploy ;;
     renew-limit) run "$s" renew_limit ;;
     *) echo "unknown step $s" >&2; exit 2 ;;
   esac

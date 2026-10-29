@@ -1,0 +1,52 @@
+{#
+  templates/excluded.html.j2
+  Project : Campaign Donations
+  Date    : 2026-10-29
+  Purpose : Records left out of the totals (issue #3): implausible individual
+            gifts and committees reported as individuals, each with its FEC
+            filing. The contributor's name is not shown: these records are
+            errors, so the name next to the amount is most likely wrong.
+  Change log:
+    2026-10-29  0.1.0  Initial version.
+#}
+{% extends "base.html.j2" %}
+{% block title %}Records left out{% endblock %}
+{% block content %}
+      <h1>Records left out</h1>
+      <p class="lead">
+        These itemized receipts are in the candidates' FEC reports but are left out of every
+        total and donor page here, because they cannot be right as filed.
+      </p>
+      <ul>
+        <li><strong>Above the plausible limit for one person:</strong> a single gift (or refund)
+          over {{ max_gift | usd }} reported as coming from an individual other than the
+          candidate. The legal limit is a few thousand dollars per election, so these are
+          almost always typing errors or committees entered as people.</li>
+        <li><strong>A committee reported as an individual:</strong> money from a committee,
+          such as a joint fundraising committee, marked as an individual's gift.</li>
+      </ul>
+      <p>The contributor's name is not shown, because the name next to an impossible amount is
+        likely to be wrong. Each record links to the page of the filing it came from.</p>
+{% if rows %}
+      <section>
+        <table>
+          <caption>{{ rows | length }} records, largest first</caption>
+          <thead><tr><th scope="col">Cycle</th><th scope="col">Candidate</th><th scope="col">Date</th><th scope="col" class="num">Amount</th><th scope="col">Why left out</th><th scope="col">Source</th></tr></thead>
+          <tbody>
+{% for e in rows %}
+            <tr>
+              <td>{{ e.cycle - 1 }}&ndash;{{ e.cycle }}</td>
+              <td><a href="{{ root }}{{ e.candidate.path }}">{{ e.candidate.name }}</a></td>
+              <td>{{ e.date or "" }}</td>
+              <td class="num">{{ e.amount | usd }}</td>
+              <td>{{ e.reason }}</td>
+              <td>{% if e.source_url %}<a href="{{ e.source_url }}">filing</a>{% endif %}</td>
+            </tr>
+{% endfor %}
+          </tbody>
+        </table>
+      </section>
+{% else %}
+      <p>No records are left out in this build.</p>
+{% endif %}
+{% endblock %}

@@ -7,6 +7,7 @@ Purpose : Load feature flags from config/flags.toml, with CD_<NAME>
 Usage   : flags = load_flags(Path("config/flags.toml"))
 Change log:
   2026-10-26  0.1.0  Initial version.
+  2026-10-29  0.1.0  max_individual_gift_usd (optional, default 20000).
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ class Flags:
     donor_page_threshold_usd: int
     offices: tuple[str, ...]
     county_view: bool
+    max_individual_gift_usd: int = 20000
 
 
 def _bool(name: str, raw: str) -> bool:
@@ -51,10 +53,10 @@ def load_flags(path: Path = DEFAULT_PATH, env: Mapping[str, str] | None = None) 
     with open(path, "rb") as fh:
         data = tomllib.load(fh)
 
-    def get(name: str):
+    def get(name: str, default=None):
         key = f"CD_{name.upper()}"
         if key not in env:
-            return data[name], False
+            return (data[name] if default is None else data.get(name, default)), False
         return env[key], True
 
     raw, from_env = get("use_gpu")
@@ -70,4 +72,8 @@ def load_flags(path: Path = DEFAULT_PATH, env: Mapping[str, str] | None = None) 
     if threshold < 0:
         raise ValueError("donor_page_threshold_usd must not be negative")
 
-    return Flags(use_gpu, cycles, threshold, offices, county_view)
+    raw, _ = get("max_individual_gift_usd", Flags.max_individual_gift_usd)
+    max_gift = int(raw)
+    if max_gift <= 0:
+        raise ValueError("max_individual_gift_usd must be positive")
+    return Flags(use_gpu, cycles, threshold, offices, county_view, max_gift)
