@@ -6,6 +6,7 @@
             gift with the candidate, for or against, amount and source filing.
   Change log:
     2026-10-26  0.1.0  Initial version.
+    2026-10-28  0.1.0  Candidate links use Candidate.path.
 #}
 {% extends "base.html.j2" %}
 {% block title %}{{ d.name }}{% endblock %}
@@ -42,7 +43,7 @@
 {% for g in details %}
             <tr>
               <td>{{ g.cycle }}</td>
-              <td><a href="{{ root }}candidates/{{ g.candidate.slug }}.html">{{ g.candidate.name }}</a></td>
+              <td><a href="{{ root }}{{ g.candidate.path }}">{{ g.candidate.name }}</a></td>
               <td>{{ g.candidate.party_full }}</td>
               <td>{{ g.via }}</td>
               <td>{{ "For" if g.support else "Against" }}</td>

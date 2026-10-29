@@ -6,6 +6,7 @@
 #           an environment variable CD_<NAME> (e.g. CD_USE_GPU=false).
 # Change log:
 #   2026-10-26  0.1.0  Initial flags.
+#   2026-10-28  0.1.0  Donor page threshold 15000 (hosting inode limit).
 # =============================================================================
 
 # Use the NVIDIA GPU (RAPIDS cuDF) for donor entity matching. Reserved for
@@ -17,7 +18,7 @@ cycles = [2016, 2018, 2020, 2022, 2024, 2026]
 
 # Individual donors get their own page only when their total for a single
 # cycle reaches this many US dollars. Committees and PACs always get a page.
-donor_page_threshold_usd = 1000
+donor_page_threshold_usd = 15000
 
 # Phase 1 focuses on the House; Senate and President pages can follow.
 offices = ["H", "S"]

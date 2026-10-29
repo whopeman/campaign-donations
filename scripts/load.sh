@@ -22,7 +22,9 @@ DATA="${FEC_DATA:-$HOME/fec-data}"
 DB="${FEC_DB:-fec}"
 CYCLES="${CD_CYCLES:-2016,2018,2020,2022,2024,2026}"
 OFFICES="${CD_OFFICES:-H,S}"
-THRESHOLD="${CD_DONOR_PAGE_THRESHOLD_USD:-1000}"
+# Same flag the renderer reads (config/flags.toml), so the two always agree.
+THRESHOLD="${CD_DONOR_PAGE_THRESHOLD_USD:-$(awk -F' *= *' \
+  '/^donor_page_threshold_usd/ {print $2}' "$HERE/config/flags.toml")}"
 JOBS="${JOBS:-3}"
 PY="${CD_PYTHON:-$HOME/venvs/cd/bin/python}"
 # Free space (GB) required before each Schedule A partition, both inside WSL

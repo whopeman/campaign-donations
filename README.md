@@ -92,7 +92,7 @@ Set in `config/flags.toml`, or override per run with `CD_<NAME>`, for example
 | -------------------------- | ------------------ | ------------------------------------------- |
 | `use_gpu`                  | `true`             | GPU entity matching (Phase 2; unused in 0.1) |
 | `cycles`                   | 2016 to 2026       | Election cycles to publish                  |
-| `donor_page_threshold_usd` | `1000`             | Individuals need this much in a cycle for a page |
+| `donor_page_threshold_usd` | `15000`            | Individuals need this much in a cycle for a page |
 | `offices`                  | `["H", "S"]`       | Offices to include                          |
 | `county_view`              | `false`            | County breakdown on state pages (preview)   |
 

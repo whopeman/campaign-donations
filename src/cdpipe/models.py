@@ -3,16 +3,32 @@ src/cdpipe/models.py
 Project : Campaign Donations
 Date    : 2026-10-26
 Purpose : Plain data records passed from the database layer to the page
-          renderer, plus the URLs and slugs derived from them.
+          renderer, plus the URLs and page paths derived from them.
 Change log:
   2026-10-26  0.1.0  Initial version.
+  2026-10-28  0.1.0  Short page paths (IDs and codes) in place of name slugs.
 """
 
 from __future__ import annotations
 
+import hashlib
+import re
 from dataclasses import dataclass
 
-from cdpipe.format import slugify
+# Page file names stay at 16 characters or fewer, ".html" included: GoDaddy
+# counts a longer name as two or more inodes, of 250,000 per account.
+_CMTE_ID = re.compile(r"C\d{8}")
+_HEX_KEY = re.compile(r"[0-9a-f]{12,}")
+_B36 = "0123456789abcdefghijklmnopqrstuvwxyz"
+
+
+def _base36(n: int, width: int) -> str:
+    s = ""
+    while n:
+        n, r = divmod(n, 36)
+        s = _B36[r] + s
+    return s.rjust(width, "0")
+
 
 PARTIES = {
     "DEM": "Democratic",
@@ -51,8 +67,10 @@ class Candidate:
     cycles: tuple[int, ...]
 
     @property
-    def slug(self) -> str:
-        return slugify(self.name, self.cand_id)
+    def path(self) -> str:
+        """Site-relative path: the FEC ID, in a folder named by its state letters."""
+        ident = re.sub(r"[^a-z0-9]", "", self.cand_id.lower())[:11] or "unknown"
+        return f"candidates/{ident[2:4] or 'xx'}/{ident}.html"
 
     @property
     def party_full(self) -> str:
@@ -83,13 +101,21 @@ class Donor:
     has_page: bool = True  # individuals under the threshold have no page of their own
 
     @property
-    def slug(self) -> str:
-        return slugify(self.name, self.key.split(":", 1)[1])
-
-    @property
     def path(self) -> str:
-        """Site-relative path; donors are sharded by slug prefix to keep folders small."""
-        return f"donors/{self.slug[:2]}/{self.slug}.html"
+        """Site-relative path, sharded so no folder passes about 1,000 files.
+
+        Committees: their FEC ID, in a folder by its last digit. Individuals:
+        "i" + the first 48 bits of their key in base 36 (10 characters).
+        """
+        kind, _, ident = self.key.partition(":")
+        if kind == "c" and _CMTE_ID.fullmatch(ident):
+            return f"donors/c{ident[-1]}/{ident.lower()}.html"
+        if kind == "i" and _HEX_KEY.fullmatch(ident):
+            h = ident
+        else:
+            h = hashlib.blake2b(self.key.encode(), digest_size=8).hexdigest()
+        prefix = "i" if kind == "i" else "x"
+        return f"donors/{h[:2]}/{prefix}{_base36(int(h[:12], 16), 10)}.html"
 
     @property
     def fec_url(self) -> str | None:

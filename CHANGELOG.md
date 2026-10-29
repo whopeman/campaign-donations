@@ -33,6 +33,9 @@ All notable changes are listed here. The format follows
   with a free-space check before each cycle and a watchdog during the load.
 - Schedule A keeps only rows filed by House and Senate candidate committees
   (`cdpipe.narrow --where-in`).
+- Short page file names (FEC IDs and 11-character donor codes) so each name is one
+  GoDaddy inode; individuals need $15,000 in a cycle for a donor page.
+- The site refuses to write two pages to one path.
 
 ### Fixed
 

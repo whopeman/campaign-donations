@@ -7,6 +7,7 @@ Purpose : The renderer writes every page type, links candidates and donors
           produces relative links that work under /campaign-donations/.
 Change log:
   2026-10-26  0.1.0  Initial tests.
+  2026-10-28  0.1.0  Short page paths (one inode per file name).
 """
 
 from pathlib import Path
@@ -126,24 +127,24 @@ def test_every_state_page_exists(built):
 def test_state_page_lists_its_candidates(built):
     ny = read(built, "states/ny/index.html")
     assert "DOE, JANE" in ny and "ROE" not in ny
-    assert 'href="../../candidates/doe-jane-h4ny12345.html"' in ny
+    assert 'href="../../candidates/ny/h4ny12345.html"' in ny
 
 
-def test_candidate_page_pie_party_and_links(built):
-    html = read(built, "candidates/doe-jane-h4ny12345.html")
+def test_candidate_page_pie_party_and_links(built, data):
+    html = read(built, "candidates/ny/h4ny12345.html")
     assert "Democratic" in html
     assert "<svg" in html and "Outside spending against" in html and "$10,000" in html
     assert "https://www.fec.gov/data/candidate/H4NY12345/" in html
-    assert "../donors/sm/smith-alice-abc123.html" in html
+    assert f"../../{data[1][0].path}" in html
     assert "fecimg/?222" in html
 
 
 def test_donor_page_party_summary_and_for_against(built):
-    html = read(built, "donors/be/better-future-pac-c00999999.html")
+    html = read(built, "donors/c9/c00999999.html")
     assert "Democratic" in html and "Republican" in html
     assert "Against" in html and "For" in html
-    assert "../../candidates/doe-jane-h4ny12345.html" in html
-    assert "../../candidates/roe-bob-i-s6tx00001.html" in html
+    assert "../../candidates/ny/h4ny12345.html" in html
+    assert "../../candidates/tx/s6tx00001.html" in html
     assert "https://www.fec.gov/data/committee/C00999999/" in html
 
 
@@ -154,10 +155,10 @@ def test_donor_below_threshold_has_no_page_and_no_link(tmp_path, data):
     Site(out_dir=tmp_path, cycles=(2024,), generated="2026-10-26").build(
         cands, [*donors, small], gifts, totals
     )
-    html = read(tmp_path, "candidates/doe-jane-h4ny12345.html")
+    html = read(tmp_path, "candidates/ny/h4ny12345.html")
     assert "SMALL, SUE" in html
-    assert "small-sue" not in html
-    assert not (tmp_path / "donors/sm/small-sue-small1.html").exists()
+    assert small.path not in html
+    assert not (tmp_path / small.path).exists()
 
 
 def test_candidate_rows_combine_gifts_from_one_donor(tmp_path, data):
@@ -167,7 +168,7 @@ def test_candidate_rows_combine_gifts_from_one_donor(tmp_path, data):
     Site(out_dir=tmp_path, cycles=(2024,), generated="2026-10-26").build(
         cands, donors, [*gifts, extra], totals
     )
-    html = read(tmp_path, "candidates/doe-jane-h4ny12345.html")
+    html = read(tmp_path, "candidates/ny/h4ny12345.html")
     assert "$3,000" in html  # 2,500 + 500 on one row
     assert "https://x.test/latest" in html and "latest filing" in html
 
@@ -177,7 +178,7 @@ def test_candidate_page_notes_donors_left_off(tmp_path, data):
     site = Site(out_dir=tmp_path, cycles=(2024,), generated="2026-10-26")
     site.common_pages()
     site.candidate_page(cands[0], {2024: totals[("H4NY12345", 2024)]}, {}, {2024: (1234, 56789)})
-    html = read(tmp_path, "candidates/doe-jane-h4ny12345.html")
+    html = read(tmp_path, "candidates/ny/h4ny12345.html")
     assert "1,234 smaller donors" in html and "$56,789" in html
 
 
@@ -194,7 +195,7 @@ def test_long_names_give_short_titles(tmp_path, data):
 
 
 def test_data_is_escaped(built):
-    html = read(built, "candidates/roe-bob-i-s6tx00001.html")
+    html = read(built, "candidates/tx/s6tx00001.html")
     assert "<i>" not in html.split("<main")[1]
     assert "&lt;i&gt;" in html
 
@@ -208,3 +209,10 @@ def test_pages_carry_fec_use_notice_and_csp(built):
 def test_writes_css_and_htaccess(built):
     assert (built / "css/site.css").exists()
     assert "Content-Security-Policy" in read(built, ".htaccess")
+
+
+def test_two_pages_with_one_path_is_an_error(tmp_path):
+    site = Site(out_dir=tmp_path, cycles=(2024,), generated="2026-10-26")
+    site._write("about.html", "about.html.j2")
+    with pytest.raises(ValueError, match="about.html"):
+        site._write("about.html", "about.html.j2")

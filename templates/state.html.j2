@@ -5,6 +5,7 @@
   Purpose : One state: candidates by cycle and office, and the state's top donors.
   Change log:
     2026-10-26  0.1.0  Initial version.
+    2026-10-28  0.1.0  Candidate links use Candidate.path.
 #}
 {% extends "base.html.j2" %}
 {% block title %}{{ state.name }}{% endblock %}
@@ -23,7 +24,7 @@
           <tbody>
 {% for c in cands %}
             <tr>
-              <td><a href="{{ root }}candidates/{{ c.slug }}.html">{{ c.name }}</a></td>
+              <td><a href="{{ root }}{{ c.path }}">{{ c.name }}</a></td>
               <td>{{ c.party_full }}</td>
               <td>{{ c.office_full }}</td>
               <td>{{ "Incumbent" if c.incumbent else "Challenger or open seat" }}</td>

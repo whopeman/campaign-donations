@@ -10,6 +10,7 @@ Usage   : Site(out_dir=Path("site"), cycles=(2024,), generated="2026-10-26")
               .build(candidates, donors, gifts, totals)
 Change log:
   2026-10-26  0.1.0  Initial version.
+  2026-10-28  0.1.0  Candidate pages at Candidate.path; refuse duplicate page paths.
 """
 
 from __future__ import annotations
@@ -108,9 +109,15 @@ class Site:
         self.env.filters["usd"] = usd
         self.env.filters["party"] = party_name
         self.env.globals.update(version=__version__, generated=self.generated, csp=CSP, pct=pct)
+        self._written: set[str] = set()
 
     # -- helpers ---------------------------------------------------------------
     def _write(self, rel: str, template: str, **ctx) -> None:
+        # Short page names come from truncated keys; never let one page
+        # silently overwrite another.
+        if rel in self._written:
+            raise ValueError(f"two pages would share the path {rel}")
+        self._written.add(rel)
         depth = rel.count("/")
         root = "../" * depth
         html = self.env.get_template(template).render(root=root, **ctx)
@@ -217,7 +224,7 @@ class Site:
             )
             rows = sorted(details.get(cy, []), key=lambda g: -g.amount)
             cycles.append((cy, t, slices, chart, rows, more.get(cy)))
-        self._write(f"candidates/{c.slug}.html", "candidate.html.j2", c=c, cycles=cycles)
+        self._write(c.path, "candidate.html.j2", c=c, cycles=cycles)
 
     def donor_page(self, d: Donor, gifts: list[Gift]) -> None:
         # cycle -> party -> [for, against]

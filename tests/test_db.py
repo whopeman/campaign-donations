@@ -7,6 +7,7 @@ Purpose : Integration test: render pages from a small "site"-shaped schema in
           CD_TEST_DSN="dbname=fec" uv run pytest tests/test_db.py
 Change log:
   2026-10-26  0.1.0  Initial tests.
+  2026-10-28  0.1.0  Short page paths.
 """
 
 import os
@@ -66,12 +67,14 @@ def test_build_from_db(tmp_path, db):
     counts = build_from_db(site, flags, dsn=DSN, schema=SCHEMA)
     assert counts == {"candidates": 1, "donors": 2}
 
-    cand = (tmp_path / "candidates/doe-jane-h4ny00001.html").read_text(encoding="utf-8")
+    from cdpipe.models import Donor
+
+    cand = (tmp_path / "candidates/ny/h4ny00001.html").read_text(encoding="utf-8")
     assert "$3,000" in cand and "https://f/2" in cand  # combined, latest filing
-    assert "LOW, LARRY" in cand and "low-larry" not in cand
+    assert "LOW, LARRY" in cand and Donor("i:bbb", "", "individual").path not in cand
     assert "2021&ndash;2022" in cand
 
-    pac = (tmp_path / "donors/pa/pac-nine-c9.html").read_text(encoding="utf-8")
+    pac = (tmp_path / Donor("c:C9", "", "committee").path).read_text(encoding="utf-8")
     assert "Against" in pac and "$10,000" in pac
 
     ny = (tmp_path / "states/ny/index.html").read_text(encoding="utf-8")
