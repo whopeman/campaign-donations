@@ -36,6 +36,8 @@ All notable changes are listed here. The format follows
 - Short page file names (FEC IDs and 11-character donor codes) so each name is one
   GoDaddy inode; individuals need $15,000 in a cycle for a donor page.
 - The site refuses to write two pages to one path.
+- QA test plan (`docs/qa/test-plan.md`), data validation checks
+  (`sql/90_validate.sql`) and the first validation report.
 
 ### Fixed
 
