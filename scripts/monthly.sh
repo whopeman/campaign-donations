@@ -5,14 +5,16 @@
 # Date    : 2026-10-27
 # Purpose : Monthly update. Each step runs on its own and is logged; a failed
 #           step stops only the steps that depend on it:
-#             fetch-bulk -> load-bulk ----\
-#             fetch-dumps -> load-dumps ---+-> site -> render -> check -> deploy
+#             fetch-bulk -> load-bulk --------+
+#             fetch-dumps --(+ load-bulk)-> load-dumps -> site -> render -> check -> deploy
+#           (Schedule A is filtered by the committee list in the bulk files.)
 #           Deploy runs only when CD_AUTO_DEPLOY=true (off by default).
 # Usage   : (WSL) scripts/monthly.sh            # all steps
 #           scripts/monthly.sh render check     # just these steps
 # Logs    : ~/fec-data/monthly/<date>.log
 # Change log:
 #   2026-10-27  0.1.0  Initial version.
+#   2026-10-28  0.1.0  load-dumps waits for load-bulk.
 # =============================================================================
 # Step functions are called through run(), which shellcheck cannot follow.
 # shellcheck disable=SC2329
@@ -98,7 +100,7 @@ for s in "${steps[@]}"; do
     fetch-bulk)  run "$s" bash "$HERE/scripts/fetch.sh" bulk ;;
     fetch-dumps) run "$s" bash "$HERE/scripts/fetch.sh" dumps ;;
     load-bulk)   needs fetch-bulk && run "$s" bash "$HERE/scripts/load.sh" bulk ;;
-    load-dumps)  needs fetch-dumps && run "$s" bash -c "'$HERE/scripts/load.sh' small && '$HERE/scripts/load.sh' sched_a" ;;
+    load-dumps)  needs fetch-dumps load-bulk && run "$s" bash -c "'$HERE/scripts/load.sh' small && '$HERE/scripts/load.sh' sched_a" ;;
     site)        needs load-bulk load-dumps && run "$s" bash "$HERE/scripts/load.sh" site ;;
     render)      needs site && run "$s" render ;;
     check)       needs render && run "$s" check ;;

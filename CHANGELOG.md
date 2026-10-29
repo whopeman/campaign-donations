@@ -31,6 +31,8 @@ All notable changes are listed here. The format follows
 - Schedule A restore runs per partition and resumes where it stopped.
 - Schedule A is loaded narrow (17 of about 80 columns) through `cdpipe.narrow`,
   with a free-space check before each cycle and a watchdog during the load.
+- Schedule A keeps only rows filed by House and Senate candidate committees
+  (`cdpipe.narrow --where-in`).
 
 ### Fixed
 

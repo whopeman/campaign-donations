@@ -5,11 +5,12 @@ Date    : 2026-10-28
 Purpose : Column projection of pg_restore COPY output (narrow Schedule A load).
 Change log:
   2026-10-28  0.1.0  Initial tests.
+  2026-10-28  0.1.0  Row filter on a column's value (--where-in).
 """
 
 import pytest
 
-from cdpipe.narrow import header_columns, project
+from cdpipe.narrow import header_columns, load_set, project
 
 HEADER = (
     b"COPY disclosure.fec_fitem_sched_a_2015_2016 "
@@ -44,6 +45,27 @@ def test_project_keeps_requested_columns_in_requested_order():
 def test_project_keeps_escaped_tabs_inside_a_field():
     out = list(project(DUMP, ["contbr_nm"]))
     assert out == [b"SMITH, JOHN\n", b"O'NEIL\\tPAT\n"]
+
+
+def test_project_keeps_only_rows_whose_value_is_in_the_set():
+    out = list(project(DUMP, ["sub_id"], where=("cmte_id", {b"C002"})))
+    assert out == [b"12\n"]
+
+
+def test_project_filter_column_need_not_be_kept():
+    out = list(project(DUMP, ["contbr_nm"], where=("cmte_id", {b"C001", b"C002"})))
+    assert len(out) == 2
+
+
+def test_project_rejects_unknown_filter_column():
+    with pytest.raises(ValueError, match="cmte_idx"):
+        list(project(DUMP, ["sub_id"], where=("cmte_idx", {b"C001"})))
+
+
+def test_load_set_reads_one_value_per_line(tmp_path):
+    p = tmp_path / "ids.txt"
+    p.write_bytes(b"C001\n\nC002\r\n  C003  \n")
+    assert load_set(p) == {b"C001", b"C002", b"C003"}
 
 
 def test_project_rejects_unknown_column():

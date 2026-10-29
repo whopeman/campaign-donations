@@ -13,7 +13,8 @@
 --             because the same spending is reported again on regular reports.
 -- Change log:
 --   2026-10-26  0.1.0  Initial version.
---   2026-10-28  0.1.0  Read the narrow disclosure.sched_a (sql/15_sched_a.sql).
+--   2026-10-28  0.1.0  Read the narrow disclosure.sched_a (sql/15_sched_a.sql);
+--                      skip receipts with no amount.
 -- =============================================================================
 \set ON_ERROR_STOP on
 CREATE SCHEMA IF NOT EXISTS site;
@@ -75,7 +76,8 @@ SELECT site.donor_key(a.contbr_nm, a.contbr_zip), cc.cand_id, cc.cycle, a.contb_
        'https://docquery.fec.gov/cgi-bin/fecimg/?' || a.image_num, a.sub_id
 FROM disclosure.sched_a a
 JOIN site.cand_cmte cc ON cc.cmte_id = a.cmte_id AND cc.cycle = a.two_year_transaction_period
-WHERE a.is_individual AND a.memo_cd IS NULL;
+WHERE a.is_individual AND a.memo_cd IS NULL
+  AND a.contb_receipt_amt IS NOT NULL;  -- a few FEC rows have no amount (5 in 2016-2026)
 
 -- 2. Contributions from PACs and party committees to candidates (bulk pas2).
 --    Earmarked gifts passed through a conduit (WinRed, ActBlue, or a PAC that

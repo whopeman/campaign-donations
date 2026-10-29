@@ -83,9 +83,11 @@ sched_a() {
   # disclosure.sched_a, one partition per cycle. Each partition is marked done
   # when loaded; a rerun loads only unfinished ones. Markers live under the
   # dump's ETag and the column list, so a new dump or new columns start afresh.
+  # Only rows filed by House and Senate candidate committees are kept (the
+  # site reads nothing else), so bulk must be loaded first.
   local dump="$DATA/dump/fec_fitem_sched_a.dump" tag state todo watch c
   tag="$(tr -dc '0-9a-f-' < "$dump.etag")"
-  state="$DATA/state/sched_a/${tag:-no-etag}-$(md5sum <<< "$SCHED_A_COLS" | cut -c1-8)"
+  state="$DATA/state/sched_a/${tag:-no-etag}-$(md5sum <<< "$SCHED_A_COLS|cmte:$OFFICES" | cut -c1-8)"
   IFS=',' read -ra cy <<< "$CYCLES"
 
   if [[ ! -e "$state/schema.done" ]]; then
@@ -97,6 +99,17 @@ sched_a() {
     psql_db -f "$HERE/sql/15_sched_a.sql"
     touch "$state/schema.done"
   fi
+
+  # Committees whose receipts we keep: House/Senate committees by type, plus any
+  # committee linked to a House/Senate candidate.
+  psql_db -At -v offices="{$OFFICES}" > "$state/cmte_ids.txt" <<'SQL'
+SELECT cmte_id FROM bulk.cm WHERE cmte_tp = ANY (:'offices'::text[])
+UNION
+SELECT l.cmte_id FROM bulk.ccl l JOIN bulk.cn c USING (cand_id, cycle)
+WHERE c.cand_office = ANY (:'offices'::text[]);
+SQL
+  log "sched_a committee filter: $(wc -l < "$state/cmte_ids.txt") committees"
+  [[ -s "$state/cmte_ids.txt" ]] || { log "no committees: load bulk first"; return 1; }
 
   todo="$(mktemp)"
   for c in "${cy[@]}"; do
@@ -126,6 +139,7 @@ sched_a() {
     psql_db -c "TRUNCATE disclosure.sched_a_$c"
     pg_restore -a -n disclosure -t "fec_fitem_sched_a_$((c - 1))_$c" -f - "$dump" \
       | PYTHONPATH="$HERE/src" "$PY" -m cdpipe.narrow --cols "$SCHED_A_COLS" \
+          --where-in "cmte_id=$state/cmte_ids.txt" \
       | psql_db -c "\\copy disclosure.sched_a_$c ($SCHED_A_COLS) FROM pstdin"
     touch "$state/$c.done"
     log "loaded sched_a $c"
@@ -164,7 +178,7 @@ case "$step" in
   sched_a) sched_a ;;
   bulk) bulk ;;
   site) site ;;
-  all) init; small_dumps; sched_a; bulk; site ;;
+  all) init; small_dumps; bulk; sched_a; site ;;
   *) echo "usage: $0 [init|small|sched_a|bulk|site|all]" >&2; exit 2 ;;
 esac
 log "done $step"
